@@ -1,0 +1,67 @@
+{
+  "engine": "stock DuckDB",
+  "engine_version": "2.0.0",
+  "catalog": "tides",
+  "mode": "live NOAA",
+  "attach_sql": "ATTACH 'tides' (TYPE vgi, LOCATION './bin/vgi-tides-worker')",
+  "verified_at": "2026-11-13T15:00:19.246430+00:00",
+  "checks": [
+    {
+      "name": "live station discovery",
+      "passed": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "name": "live tide predictions",
+      "passed": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "name": "live observed water levels",
+      "passed": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "name": "live current predictions",
+      "passed": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "name": "live current bins",
+      "passed": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "name": "live NOAA historical current observations",
+      "passed": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    }
+  ],
+  "extension_version": "e75482339d",
+  "expected_error_checks": 0,
+  "path_note": "Local executable path normalized to ./bin/ for publication; run from the project directory."
+}

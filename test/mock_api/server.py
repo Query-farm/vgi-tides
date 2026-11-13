@@ -1,127 +1,77 @@
 #!/usr/bin/env python3
-# managed-by: vgi-starters (edit upstream in shared/, then run tools/render.py)
-"""A tiny, dependency-free paginated JSON API used by the tests.
-
-``fetch_items`` (the example REST table function) is tested against this
-server, so the suite stays deterministic and runs offline.
-
-Endpoints
----------
-``GET /items?page=<n>&page_size=<m>``
-    Returns ``{"items": [...], "next_page": <n+1 or null>}`` over a fixed set
-    of 25 items.
-``GET /health``
-    Returns ``{"status": "ok"}``.
-
-Behaviour switches
-------------------
-* ``MOCK_API_TOKEN`` env var: if set, every ``/items`` request must send
-  ``Authorization: Bearer <token>`` or it gets a 401.
-* ``MOCK_API_FLAKY=1`` env var (or ``?flaky=1``): the first request for each
-  page returns ``429`` with ``Retry-After: 0``, exercising the client's retry
-  path.
-
-Usage::
-
-    python3 test/mock_api/server.py            # prints PORT:<n> once listening
-    python3 test/mock_api/server.py --port 8765
-"""
-
-from __future__ import annotations
-
-import argparse
-import contextlib
+"""Deterministic NOAA-shaped responses for tests; never contacts the network."""
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse, parse_qs
+from datetime import datetime, timedelta
 import json
 import os
-import sys
-import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
-
-CATEGORIES = ("hardware", "software", "service")
-
-ITEMS = [
-    {
-        "id": i,
-        "name": f"item-{i:02d}",
-        "category": CATEGORIES[i % 3],
-        "price": round(1.5 * i, 2),
-    }
-    for i in range(1, 26)
-]
-
-_flaky_seen: set[tuple[int, int]] = set()
-_flaky_lock = threading.Lock()
-
 
 class Handler(BaseHTTPRequestHandler):
-    """Serve ``/items`` pages and ``/health``."""
-
-    def log_message(self, format: str, *args: object) -> None:  # noqa: A002 - stdlib signature
-        """Log to stderr only, so stdout carries nothing except the ``PORT:`` line."""
-        sys.stderr.write("mock_api: " + (format % args) + "\n")
-
-    def _send(self, status: int, body: object, headers: dict[str, str] | None = None) -> None:
-        payload = json.dumps(body).encode()
+    seen = set()
+    def log_message(self, *_): pass
+    def send(self, value, status=200, content_type="application/json", headers=None):
+        body=(json.dumps(value) if content_type == "application/json" else value).encode()
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(payload)))
-        for key, value in (headers or {}).items():
-            self.send_header(key, value)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        for k,v in (headers or {}).items(): self.send_header(k,v)
         self.end_headers()
-        self.wfile.write(payload)
-
-    def do_GET(self) -> None:
-        """Handle GET requests."""
-        url = urlparse(self.path)
-        if url.path == "/health":
-            self._send(200, {"status": "ok"})
-            return
-        if url.path != "/items":
-            self._send(404, {"error": "not found"})
-            return
-
-        token = os.environ.get("MOCK_API_TOKEN")
-        if token and self.headers.get("Authorization") != f"Bearer {token}":
-            self._send(401, {"error": "missing or invalid bearer token"})
-            return
-
-        query = parse_qs(url.query)
+        self.wfile.write(body)
+    def do_GET(self):
+        url=urlparse(self.path)
+        q={k:v[0] for k,v in parse_qs(url.query).items()}
+        if os.environ.get("MOCK_API_FLAKY") and self.path not in self.seen:
+            self.seen.add(self.path)
+            return self.send({"error":"rate limited"},429,headers={"Retry-After":"0"})
         try:
-            page = int(query.get("page", ["1"])[0])
-            page_size = int(query.get("page_size", ["10"])[0])
-        except ValueError:
-            self._send(400, {"error": "page and page_size must be integers"})
-            return
-        if page < 1 or not 1 <= page_size <= 1000:
-            self._send(400, {"error": "page must be >= 1 and page_size in [1, 1000]"})
-            return
-
-        if os.environ.get("MOCK_API_FLAKY") == "1" or query.get("flaky", ["0"])[0] == "1":
-            with _flaky_lock:
-                key = (page, page_size)
-                if key not in _flaky_seen:
-                    _flaky_seen.add(key)
-                    self._send(429, {"error": "slow down"}, {"Retry-After": "0"})
-                    return
-
-        start = (page - 1) * page_size
-        chunk = ITEMS[start : start + page_size]
-        next_page = page + 1 if start + page_size < len(ITEMS) else None
-        self._send(200, {"items": chunk, "next_page": next_page})
-
-
-def main() -> None:
-    """Start the server and print ``PORT:<n>`` once it is listening."""
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=0)
-    args = parser.parse_args()
-    server = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"PORT:{server.server_address[1]}", flush=True)
-    with contextlib.suppress(KeyboardInterrupt):
-        server.serve_forever()
-
+            self.route(url.path,q)
+        except (ValueError, KeyError, AssertionError) as error:
+            self.send({"error":{"message":str(error)}},400)
+    def route(self, path, q):
+        if path == "/stations.json":
+            assert q.get("type") in ["waterlevels","tidepredictions","currents","currentpredictions"], "missing station type"
+            return self.send({"stations":[{"id":"8518750","name":"The Battery","lat":40.7,"lng":-74.01,"state":"NY","type":"R"},{"id":"9414290","name":"San Francisco","lat":37.8,"lng":-122.46,"state":"CA","type":"R"}]})
+        if path.endswith("/bins.json"):
+            assert q.get("units") == "metric"
+            return self.send({"bins":None if "0000000" in path else [{"num":1,"depth":1.8,"qc_flag":1},{"bin":2,"depth":3.6,"qc_flag":0}]})
+        if path != "/datagetter": return self.send({},404)
+        for key,value in {"units":"metric","time_zone":"gmt","format":"json","application":"QueryFarm_vgi_tides"}.items():
+            assert q.get(key)==value, f"wrong {key}"
+        if q["station"]=="9999999": return self.send({"error":{"message":"Invalid station or unsupported product"}})
+        if q["station"]=="0000000": return self.send({"error":{"message":"No data was found. This product may not be offered at this station."}})
+        if q["station"]=="8888888": return self.send({"unexpected":[]})
+        if q["station"]=="HTTP001": return self.send({},404)
+        start=datetime.strptime(q["begin_date"],"%Y%m%d")
+        end=datetime.strptime(q["end_date"],"%Y%m%d")
+        assert 0 <= (end-start).days <= 6, "request exceeds seven inclusive days"
+        product=q["product"]
+        rows=[]
+        day=start
+        while day<=end:
+            if product=="predictions":
+                assert q.get("datum") in ["MLLW","MSL"], "datum not forwarded"
+                step=q["interval"]
+                minutes=[0,360,720,1080] if step=="hilo" else list(range(0,1440,60 if step=="h" else int(step)))
+                for i,minute in enumerate(minutes):
+                    r={"t":(day+timedelta(minutes=minute)).strftime("%Y-%m-%d %H:%M"),"v":str([1.2,.2,1.5,.1][i%4])}
+                    if step=="hilo":r["type"]="H" if i%2==0 else "L"
+                    rows.append(r)
+            elif product=="water_level":
+                assert q.get("datum") in ["MLLW","MSL"]
+                for i,value in enumerate(["1.2","0","","-0.3"]):
+                    rows.append({"t":(day+timedelta(hours=i*6)).strftime("%Y-%m-%d %H:%M"),"v":value,"s":"0.01","q":"p","f":"1,0,0,0"})
+            elif product=="currents_predictions":
+                assert q.get("interval") in ["max_slack","h","1","6","10","30","60"]
+                for i,(event,speed) in enumerate([("flood",25),("slack",0),("ebb",-12.5),("slack",0)]):
+                    rows.append({"Time":(day+timedelta(hours=i*6)).strftime("%Y-%m-%d %H:%M"),"Velocity_Major":speed,"Type":event,"Bin":q["bin"],"Depth":"1.8","meanFloodDir":9,"meanEbbDir":198})
+            elif product=="currents":
+                bins=[1,2] if q["bin"]=="0" else [int(q["bin"])]
+                for b in bins:rows.append({"t":day.strftime("%Y-%m-%d %H:%M"),"s":str(25*b),"d":"90","b":str(b)})
+            else: raise ValueError("unsupported product")
+            day+=timedelta(days=1)
+        return self.send({"predictions":rows} if product=="predictions" else {"current_predictions":{"units":"meters, cm/s","cp":rows}} if product=="currents_predictions" else {"data":rows})
 
 if __name__ == "__main__":
-    main()
+    server=ThreadingHTTPServer(("127.0.0.1", int(os.environ.get("MOCK_API_PORT","0"))),Handler)
+    print(f"PORT:{server.server_address[1]}",flush=True)
+    server.serve_forever()

@@ -1,54 +1,17 @@
-// Unit tests. The SQL-level tests live in test/sql and run through DuckDB.
-
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { Arguments, VgiClient } from "@query-farm/vgi";
 import { subprocessConnect } from "@query-farm/vgi-rpc";
-import { getJson, parsePage, resolveToken } from "../src/fetch_items.ts";
-import { greetAll } from "../src/greet.ts";
-import { sequenceColumns } from "../src/sequence.ts";
 
 const ROOT = join(import.meta.dir, "..");
-
-test("greet: casual and formal, NULL stays NULL", () => {
-  const names = ["Ada", null, "Grace"];
-  expect(greetAll(names, "casual")).toEqual(["Hi, Ada!", null, "Hi, Grace!"]);
-  expect(greetAll(names, "formal")).toEqual(["Good day, Ada.", null, "Good day, Grace."]);
-});
-
-test("sequence: columns for a window of rows", () => {
-  expect(sequenceColumns(2, 3, 5n)).toEqual({ n: [10n, 15n, 20n], squared: [100n, 225n, 400n] });
-});
-
-test("fetch_items: token comes from the secret, then the environment", () => {
-  const saved = process.env.STARTER_API_TOKEN;
-  process.env.STARTER_API_TOKEN = "from-env";
-  try {
-    expect(resolveToken({ my_secret: { type: "starter_api", token: "from-secret" } })).toBe("from-secret");
-    expect(resolveToken({})).toBe("from-env");
-  } finally {
-    if (saved === undefined) delete process.env.STARTER_API_TOKEN;
-    else process.env.STARTER_API_TOKEN = saved;
-  }
-});
-
-test("fetch_items: parsePage reads items and next_page", () => {
-  const body = { items: [{ id: 1, name: "a", category: "c", price: 1.5 }], next_page: null };
-  expect(parsePage(body)).toEqual({ items: body.items, nextPage: null });
-});
-
-describe("against the worker and the mock API", () => {
+describe("NOAA fixtures through the worker transport", () => {
   let client: VgiClient;
   let mock: ReturnType<typeof Bun.spawn>;
-  let mockUrl: string;
-
   beforeAll(async () => {
-    // A client that launches the worker as a subprocess, the way DuckDB does.
-    client = new VgiClient(subprocessConnect([process.execPath, "run", join(ROOT, "src", "worker.ts")]));
-    // The mock API prints PORT:<n> once it is listening.
-    mock = Bun.spawn([process.env.PYTHON ?? "python3", join(ROOT, "test", "mock_api", "server.py")], {
+    mock = Bun.spawn(["python3", join(ROOT, "test/mock_api/server.py")], {
       stdout: "pipe",
       stderr: "inherit",
+      env: { ...process.env, MOCK_API_FLAKY: "1" },
     });
     const reader = (mock.stdout as ReadableStream<Uint8Array>).getReader();
     let text = "";
@@ -59,60 +22,66 @@ describe("against the worker and the mock API", () => {
     }
     reader.releaseLock();
     const port = text.match(/^PORT:(\d+)/)?.[1];
-    if (!port) throw new Error(`mock API did not report a port: ${text}`);
-    mockUrl = `http://127.0.0.1:${port}`;
+    if (!port) throw new Error(`mock did not report port: ${text}`);
+    const mockUrl = `http://127.0.0.1:${port}`;
+    client = new VgiClient(
+      subprocessConnect([process.execPath, "run", join(ROOT, "src/worker.ts")], {
+        env: { TIDES_API_BASE_URL: mockUrl, TIDES_METADATA_BASE_URL: mockUrl },
+        stderr: "inherit",
+      }),
+    );
   });
-
   afterAll(() => {
     client?.close();
     mock?.kill();
   });
-
-  async function table(name: string, positional: unknown[], named: Record<string, unknown> = {}) {
+  async function table(name: string, positional: unknown[] = [], named: Record<string, unknown> = {}) {
     const rows: Record<string, unknown>[] = [];
-    for await (const page of client.tableFunctionRows({
+    for await (const batch of client.tableFunctionRows({
       functionName: name,
       arguments: new Arguments(positional, new Map(Object.entries(named))),
       int64: "bigint",
-    })) {
-      rows.push(...page);
-    }
+    }))
+      rows.push(...batch);
     return rows;
   }
-
-  // `int64: "bigint"` makes every BIGINT a bigint (the default mixes number and
-  // bigint by size); convert to numbers to compare against small literals.
-  const col = (rows: Record<string, unknown>[], name: string) => rows.map((r) => Number(r[name]));
-
-  test("sequence_table: default step", async () => {
-    const rows = await table("sequence_table", [4n]);
-    expect(col(rows, "n")).toEqual([0, 1, 2, 3]);
-    expect(col(rows, "squared")).toEqual([0, 1, 4, 9]);
+  test("stations and bins expose typed records", async () => {
+    expect(await table("stations")).toHaveLength(2);
+    expect((await table("current_bins", ["cb0102"]))[0]).toMatchObject({ bin: 1, depth_m: 1.8 });
   });
-
-  test("sequence_table: named step", async () => {
-    const rows = await table("sequence_table", [3n], { step: 5n });
-    expect(col(rows, "n")).toEqual([0, 5, 10]);
+  test("tides chunk 16 days without overlap, retrying initial rate limits", async () => {
+    const rows = await table("tide_predictions", ["8518750", "2026-01-01", "2026-01-16"]);
+    expect(rows).toHaveLength(64);
+    expect(new Set(rows.map((r) => String(r.time))).size).toBe(64);
+    expect(new Set(rows.map((r) => r.source_url)).size).toBe(3);
+    expect(rows[0]).toMatchObject({ height_m: 1.2, event_type: "H", datum: "MLLW" });
   });
-
-  test("sequence_table: streams in batches", async () => {
-    const rows = await table("sequence_table", [25_000n]);
-    expect(rows.length).toBe(25_000);
-    expect(col(rows, "n").at(-1)).toBe(24_999);
+  test("named step and datum reach NOAA; NULL heights and QC survive Arrow", async () => {
+    expect(
+      await table("tide_predictions", ["8518750", "2026-01-01", "2026-01-01"], { step: "h", datum: "MSL" }),
+    ).toHaveLength(24);
+    const rows = await table("water_levels", ["8518750", "2026-01-01", "2026-01-01"]);
+    expect(rows.map((r) => r.height_m)).toEqual([1.2, 0, null, -0.3]);
+    expect(rows[0]).toMatchObject({ quality: "p", flags: "1,0,0,0" });
   });
-
-  test("fetch_items: pages through the API", async () => {
-    const rows = await table("fetch_items", [mockUrl], { page_size: 4n });
-    expect(rows.length).toBe(25);
-    expect(col(rows, "id")).toEqual(Array.from({ length: 25 }, (_, i) => i + 1));
-    expect(new Set(rows.map((r) => r.category))).toEqual(new Set(["hardware", "software", "service"]));
+  test("current predictions preserve ebb and slack; observations support all bins", async () => {
+    const pred = await table("current_predictions", ["ACT0956", "2026-01-01", "2026-01-01"], { bin: 2n });
+    expect(pred.map((r) => r.velocity_major_mps)).toEqual([0.25, 0, -0.125, 0]);
+    expect(pred[0]).toMatchObject({ bin: 2, depth_m: 1.8 });
+    const obs = await table("currents", ["cb0102", "2026-01-01", "2026-01-02"]);
+    expect(obs).toHaveLength(4);
+    expect(obs.map((r) => r.speed_mps)).toEqual([0.25, 0.5, 0.25, 0.5]);
   });
-
-  test("fetch_items: rejects a non-http URL at bind", async () => {
-    await expect(table("fetch_items", ["ftp://example.com"])).rejects.toThrow(/pattern/i);
+  test("empty data and bins are empty streams; malformed responses and errors are visible", async () => {
+    expect(await table("water_levels", ["0000000", "2026-01-01", "2026-01-02"])).toHaveLength(0);
+    expect(await table("current_bins", ["0000000"])).toHaveLength(0);
+    await expect(table("tide_predictions", ["9999999", "2026-01-01", "2026-01-01"])).rejects.toThrow("Invalid station");
+    await expect(table("water_levels", ["8888888", "2026-01-01", "2026-01-01"])).rejects.toThrow("array");
+    await expect(table("water_levels", ["HTTP001", "2026-01-01", "2026-01-01"])).rejects.toThrow("HTTP 404");
   });
-
-  test("getJson: error names the HTTP status", async () => {
-    await expect(getJson(`${mockUrl}/nope`)).rejects.toThrow(/HTTP 404/);
+  test("bind rejects invalid dates, NULL and unsupported intervals", async () => {
+    await expect(table("water_levels", [null, "2026-01-01", "2026-01-01"])).rejects.toThrow();
+    await expect(table("tide_predictions", ["8518750", "2026-02-30", "2026-03-01"])).rejects.toThrow();
+    await expect(table("tide_predictions", ["8518750", "2026-01-01", "2026-01-01"], { step: "2" })).rejects.toThrow();
   });
 });

@@ -12,18 +12,16 @@
 
 import { field, type VgiDataType, type VgiField } from "@query-farm/vgi";
 
-export const CATALOG_NAME = "starter";
+export const CATALOG_NAME = "tides";
 export const VERSION = "0.1.0";
 
-export const SOURCE_URL = "https://github.com/Query-farm/vgi-starter-typescript";
+export const SOURCE_URL = "https://github.com/Query-farm/vgi-tides";
 
 /**
  * Categories group functions in docs and agent tools. Every object's
  * `vgi.category` must name one of these.
  */
 export const SCHEMA_CATEGORIES = [
-  { name: "text", title: "Text", description: "Functions that build or transform strings." },
-  { name: "generators", title: "Generators", description: "Table functions that generate rows." },
   { name: "api", title: "REST APIs", description: "Table functions that read from HTTP APIs." },
 ] as const;
 
@@ -62,82 +60,71 @@ export function column(name: string, type: VgiDataType, comment: string, nullabl
 }
 
 export const CATALOG_DOC_LLM =
-  "An example VGI worker generated from the Query.Farm starter template. It shows the three shapes " +
-  "most workers need: a vectorized scalar function with an overload, a deterministic table " +
-  "function with a named default argument, and a table function that pages through a REST API with " +
-  "retries and an optional bearer token taken from a DuckDB secret or an environment variable. " +
-  "Replace them with your own functions; keep the metadata complete so agents can discover and " +
-  "call them.";
-
+  "NOAA CO-OPS tide and current stations, predictions and observations in SQL. Table functions return typed Arrow columns with UTC timestamps, source URLs and retrieval times. No API key is needed. Missing measurements become NULL; invalid arguments and unexpected upstream responses fail explicitly. Data is retrieved when a query executes. Use SQL to filter, aggregate and join stations to measurements. Water levels are metres relative to the returned datum, default MLLW. Current velocities are converted from cm/s to m/s. Time-series dates are inclusive UTC days, at most 366 days; requests are automatically chunked. Tide predictions are astronomical and current slack is a separate product.";
 export const CATALOG_DOC_MD =
-  "# VGI starter worker\n\n" +
-  "**An example [VGI](https://query.farm/vgi) worker that brings custom functions into DuckDB " +
-  "SQL.** It was generated from the Query.Farm starter template and is meant to be renamed and " +
-  "rewritten: every function here demonstrates one pattern you will reuse, from vectorized scalars " +
-  "and streaming table functions to a REST API reader that retries politely and reads a bearer " +
-  "token from a DuckDB secret or the environment.\n\n" +
-  "The worker speaks Apache Arrow to DuckDB over stdin/stdout, a Unix socket, or HTTP, so the " +
-  "same code runs as a local subprocess or a hosted service. See the " +
-  "[VGI documentation](https://query.farm/vgi/docs/) to learn more.";
-
-export const SCHEMA_DOC_LLM =
-  "The `main` schema holds the starter template's example functions, one per common worker " +
-  "pattern. `greet(name)` and `greet(name, style)` are vectorized scalars: use them inside a " +
-  "projection or predicate, one result per row; `style` is a constant that must be 'casual' or " +
-  "'formal'. `sequence_table(count, step := 1)` is a deterministic table function that returns " +
-  "`count` rows of `(n, squared)`; use it for demos, tests, and as a template for generators. " +
-  "`fetch_items(base_url, page_size := 100)` reads every item from a paginated JSON REST API as " +
-  "`(id, name, category, price)` rows, streaming one page per batch, retrying rate-limited " +
-  "requests, and authenticating with a `starter_api` DuckDB secret or the `STARTER_API_TOKEN` " +
-  "environment variable. Scalars cannot take named arguments; table functions can.";
-
+  "# NOAA Tides\n\n" +
+  CATALOG_DOC_LLM +
+  "\n\n## Data access\n\nUse the main schema to discover stations and retrieve observations. Each response preserves its source URL and UTC retrieval time. Missing sensor values remain NULL.";
+export const SCHEMA_DOC_LLM = `The main schema exposes tides station discovery, measurements and reference information. ${CATALOG_DOC_LLM}`;
 export const SCHEMA_DOC_MD =
-  "## main\n\n" +
-  "The starter template's example functions, one per common worker pattern.\n\n" +
-  "- **Scalars** answer one question per row and slot into a projection or predicate.\n" +
-  "- **Table functions** return sets of rows, streamed to DuckDB in Arrow batches.\n" +
-  "- **REST readers** page through an HTTP API and authenticate with a DuckDB secret.";
-
+  "## Marine functions\n\n" +
+  SCHEMA_DOC_LLM +
+  "\n\n### Query patterns\n\nDiscover station IDs first, retrieve measurements, then join or aggregate the resulting rows. Use the reference table for measurement units and supported products.";
 export const AGENT_TEST_TASKS = [
-  { name: "formal_greeting", prompt: "Using the starter worker, greet the name 'Grace' formally." },
   {
-    name: "sum_of_squares",
-    prompt:
-      "Using the starter worker, what is the sum of the squared column for the first 10 rows " +
-      "of the sequence with the default step?",
+    name: "reference_units",
+    prompt: "List sql_function and output_units for products measured in m/s, ordered by sql_function.",
   },
   {
-    name: "stepped_sequence",
-    prompt: "List the n values of a 4-row sequence that steps by 5, in ascending order.",
+    name: "stations_query",
+    prompt: "Using tides.main.stations, list the first five station IDs and names ordered by station ID.",
   },
   {
-    name: "items_per_category",
+    name: "tide_predictions_query",
     prompt:
-      "The items API is running at https://vgi-starter-api.query-farm.services/v1. How many items does it have in each category?",
+      "Using tides.main.tide_predictions, show time and height_m for station 8518750 for January 1\u20132, 2026, ordered by time.",
+  },
+  {
+    name: "water_levels_query",
+    prompt:
+      "Using tides.main.water_levels, show time and height_m for station 8518750 for January 1\u20132, 2026, ordered by time.",
+  },
+  {
+    name: "current_predictions_query",
+    prompt:
+      "Using tides.main.current_predictions, show time and velocity_major_mps for station ACT0956 for January 1\u20132, 2026, ordered by time.",
+  },
+  {
+    name: "currents_query",
+    prompt:
+      "Using tides.main.currents, show time and speed_mps for station cb0102 for January 1\u20132, 2026, ordered by time.",
+  },
+  {
+    name: "current_bins_query",
+    prompt: "Using tides.main.current_bins, list bin and depth_m for current station cb0102 ordered by bin.",
   },
 ];
-
 export const CATALOG_TAGS: Record<string, string> = {
-  "vgi.title": "VGI Starter Worker",
-  "vgi.subtitle": "Example DuckDB functions to rename and replace: a scalar, a table function and a REST API reader.",
+  ...{
+    "vgi.title": "NOAA Tides",
+    "vgi.subtitle": "NOAA CO-OPS tide and current stations, predictions and observations for marine analysis.",
+    "vgi.source_url": "https://github.com/Query-farm/vgi-tides",
+    "vgi.icon_url": "https://query.farm/media-kit/products/vgi/vgi-logo.png",
+    "vgi.license": "0BSD",
+    "vgi.author": "Query.Farm",
+    "vgi.copyright": "Copyright 2026 Query.Farm LLC",
+    "vgi.support_contact": "https://github.com/Query-farm/vgi-tides/issues",
+    "vgi.support_policy_url": "https://github.com/Query-farm/vgi-tides#support",
+    "vgi.keywords": '["noaa", "tides", "marine", "sql", "observations", "stations"]',
+  },
   "vgi.doc_llm": CATALOG_DOC_LLM,
   "vgi.doc_md": CATALOG_DOC_MD,
-  "vgi.source_url": SOURCE_URL,
-  "vgi.icon_url": "https://query.farm/media-kit/products/vgi/vgi-logo.png",
-  "vgi.license": "0BSD",
-  "vgi.author": "Query.Farm",
-  "vgi.copyright": "Copyright 2026 Query.Farm LLC",
-  "vgi.keywords": keywordsArray("vgi, duckdb, starter template, example worker, rest api, table function"),
-  "vgi.support_contact": `${SOURCE_URL}/issues`,
-  "vgi.support_policy_url": `${SOURCE_URL}#support`,
-  // Public analyst tasks for `vgi-lint simulate`; private graders live in vgi-agent-tests.yaml.
   "vgi.agent_test_tasks": JSON.stringify(AGENT_TEST_TASKS),
 };
-
 export const SCHEMA_TAGS: Record<string, string> = {
-  "vgi.title": "Starter Functions",
-  domain: "examples",
-  "vgi.keywords": keywordsArray("greeting, sequence, generator, rest api, pagination"),
+  "vgi.title": "Marine Data",
+  domain: "marine",
+  "vgi.keywords": keywordsArray("noaa, tides, marine, observations"),
   "vgi.doc_llm": SCHEMA_DOC_LLM,
   "vgi.doc_md": SCHEMA_DOC_MD,
   "vgi.categories": JSON.stringify(SCHEMA_CATEGORIES),

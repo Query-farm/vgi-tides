@@ -1,319 +1,142 @@
-<!-- managed-by: vgi-starters (edit upstream in shared/README.md.tmpl, then run tools/render.py) -->
-<p align="center">
-  <img src="https://query.farm/media-kit/products/vgi/vgi-logo.png" alt="Vector Gateway Interface (VGI)" width="320">
-</p>
+# vgi-tides
 
-<p align="center"><em>A Query.Farm VGI worker for DuckDB, written in TypeScript.</em></p>
+Read NOAA CO-OPS tides, water levels and tidal currents from SQL. **TypeScript / Bun**, using VGI and Arrow batches. No API key required.
 
-# VGI Starter Worker — TypeScript
+Six table functions expose station discovery, tide predictions, observed water levels, predicted currents, observed currents and current-meter depth bins. The `products` reference table documents the supported NOAA products and output units.
 
-[![CI](https://github.com/Query-farm/vgi-starter-typescript/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-starter-typescript/actions/workflows/ci.yml)
-[![vgi worker: query.farm](https://query.farm/media-kit/shields/vgi-worker.svg)](https://query.farm)
+## Run
 
-[VGI](https://query.farm/vgi) lets DuckDB call functions that live in a separate
-process: your code, in any language, exposed as ordinary SQL. This worker adds
-three example functions that you rename and replace with your own:
+Requires Bun 1.3+; development checks also use `make`, Python 3 and `uv`.
 
-| Function | Kind | Shows you how to |
-|---|---|---|
-| `greet(name)` / `greet(name, style)` | scalar | vectorize over a column, overload, constrain a constant |
-| `sequence_table(count, step := 1)` | table | stream rows in batches, take named arguments |
-| `fetch_items(base_url, page_size := 100)` | table | page through a REST API, retry, read a secret |
-
-<!-- template-only:start -->
-## Use this template
-
-This repository is a **template**. Click **Use this template** on GitHub, or:
-
-```bash
-gh repo create my-org/weather-worker --template Query-farm/vgi-starter-typescript --private --clone
-cd weather-worker
-make init NAME=weather     # renames catalog, package, binary, env vars; removes this section
-make check                 # lint + tests over every transport + metadata score
-```
-
-Prefer to work with an AI coding agent? `make init` first, then hand it
-[AGENTS.md](AGENTS.md). See [Using with coding agents](#using-with-coding-agents).
-
-Starters exist for [Python](https://github.com/Query-farm/vgi-starter-python),
-[TypeScript](https://github.com/Query-farm/vgi-starter-typescript),
-[Go](https://github.com/Query-farm/vgi-starter-go),
-[Rust](https://github.com/Query-farm/vgi-starter-rust),
-[Java](https://github.com/Query-farm/vgi-starter-java) and
-[C#](https://github.com/Query-farm/vgi-starter-csharp). They are generated from
-[Query-farm/vgi-starters](https://github.com/Query-farm/vgi-starters); send
-changes there.
-<!-- template-only:end -->
-
-## Quick start
-
-**Prerequisites:** [Bun](https://bun.sh) 1.3+ and [uv](https://docs.astral.sh/uv/) (it runs the SQL
-test runner and the metadata checker).
-
-```bash
+```sh
+cd vgi-tides
 make build
 ```
 
-Then open DuckDB 2.0 or [Haybarn](https://query.farm/products/haybarn) and attach the
-worker. `LOCATION` is the command DuckDB runs to start it; use an absolute path,
-because a relative one resolves against DuckDB's working directory.
-
-**DuckDB 2.0:**
+Attach from stock DuckDB **2.0.0** with the signed Query Farm extension (use your actual absolute project path):
 
 ```sql
 SET allow_extension_repositories = 'allowed';
-CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb-extensions.query.farm';
+CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm
+  WITH PREFIX 'https://duckdb-extensions.query.farm';
 INSTALL vgi FROM query_farm;
 LOAD vgi FROM query_farm;
-ATTACH 'starter' (TYPE vgi, LOCATION '/abs/path/to/vgi-starter-typescript/bin/vgi-starter-worker');
-```
-
-**Haybarn 2.0** (`uvx haybarn-cli`):
-
-```sql
-INSTALL vgi FROM community;
-LOAD vgi;
-ATTACH 'starter' (TYPE vgi, LOCATION '/abs/path/to/vgi-starter-typescript/bin/vgi-starter-worker');
-```
-
-Now call the functions:
-
-```sql
-SELECT starter.main.greet('Ada');                         -- Hi, Ada!
-SELECT starter.main.greet('Ada', 'formal');               -- Good day, Ada.
-SELECT * FROM starter.main.sequence_table(5, step := 2) ORDER BY n;
-```
-
-`fetch_items` pages through a REST API. Try it against the public demo API (25 fixed items):
-
-```sql
-SELECT category, count(*) AS items, round(avg(price), 2) AS avg_price
-FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1')
-GROUP BY category ORDER BY category;
-```
-
-If an older cached extension misbehaves, refresh it with `FORCE INSTALL vgi FROM query_farm;`
-(DuckDB) or `FORCE INSTALL vgi FROM community;` (Haybarn).
-
-## Using it in a pipeline
-
-Worker functions compose with everything else in DuckDB:
-
-```sql
--- Materialize an API into a local table.
-CREATE TABLE items AS SELECT * FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1');
-
--- Join it with local files.
-SELECT i.name, i.price, s.units
-FROM items i JOIN 'sales.parquet' s ON s.item_id = i.id;
-
--- Call a scalar per row of another table.
-SELECT customer, starter.main.greet(customer, 'formal') FROM read_csv('customers.csv');
-```
-
-## Project layout
-
-```
-src/
-  worker.ts        # entry point: serves the catalog over stdio, --unix or --http
-  catalog.ts       # assembles the catalog; add new functions to FUNCTIONS
-  meta.ts          # catalog/schema metadata + helpers (objectTags, column)
-  greet.ts         # scalar example (overloads, const param with choices)
-  sequence.ts      # table function example (named args, streaming state)
-  fetch_items.ts   # REST API table function (pagination, retries, secrets)
-  cli.ts           # flag parsing: stdio / --unix / --http (PORT:<n>, /health)
-  log.ts           # stderr logger
-bin/               # vgi-starter-worker (what DuckDB launches) and run-recipe
-tests/             # bun unit tests (worker subprocess + mock API)
-test/sql/          # sqllogictest files run through DuckDB
-test/mock_api/     # offline mock of the REST API used by tests
-examples/          # recipes: pushdown, caching, catalog tables, aggregates, COPY …
-ci/                # integration harness used by `make test-sql` and CI
-scripts/           # vgi_template.py (init / template-diff)
-vgi-agent-tests.yaml  # private graders for the agent test tasks
-```
-
-## Adding a function
-
-1. Create `src/<name>.ts`. Copy the closest example: `greet.ts` for a scalar,
-   `sequence.ts` for a generator, `fetch_items.ts` for an API.
-2. Declare arguments: `params` + `argDocs` (scalars), or the ordered `parameters`
-   list when a constant needs `choices`/`ge`/`le`. Table functions use `args`,
-   `argDocs` and `argConstraints`; an argument listed in `argDefaults` becomes a
-   named argument (`step := 2`), the others are positional.
-3. Give it `description`, `tags: objectTags(...)` (from `src/meta.ts`) and
-   `examples`.
-4. Add it to `FUNCTIONS` in `src/catalog.ts`.
-
-**Which kind of function?**
-
-| You want to… | Use |
-|---|---|
-| compute one value per input row | a **scalar** function |
-| return a set of rows from arguments (an API, a file, a generator) | a **table** function |
-| transform or aggregate the rows of a query | a **table in-out** function or an **aggregate** |
-| expose a fixed dataset by name (`SELECT * FROM starter.main.t`) | a **catalog table** |
-| write data out to a file or service | `COPY … TO` with a copy function |
-| accept `INSERT` / `UPDATE` / `DELETE` | a catalog table with insert/update/delete functions |
-
-The [examples/](examples/) folder has a recipe for most of these. Writable tables have no
-recipe:
-
-A writable table is a `TableDescriptor` that names a table in-out function per operation in
-`insertFunction`, `updateFunction` and `deleteFunction`, with the richest result each one
-produces in `writeResultModes`. `writeOptions`, `writeResultSchema`, `writeResultBatch` and
-`rowIdField` (all exported by `@query-farm/vgi`) read DuckDB's `write_options` argument and
-build the result. UPDATE and DELETE need the table's scan `function` to emit `rowIdField()` and
-support projection pushdown. Transactions: return `supports_transactions` from the catalog's
-attach and override `transactionBegin` / `transactionCommit` / `transactionRollback`.
-Since VGI protocol 3.3 a table's scan and write functions are table-only: hidden from
-`duckdb_functions()` and not callable from SQL. Set `exposeScan: true` on the table to keep the
-scan callable as an ordinary table function too (write functions never are).
-[`examples/simple-writable-worker.ts`](https://github.com/Query-farm/vgi-typescript/blob/main/examples/simple-writable-worker.ts)
-and `examples/writable-tx-worker.ts` in vgi-typescript are complete workers.
-
-## Secrets and configuration
-
-`fetch_items` shows the recommended pattern. A bearer token comes from a DuckDB secret
-when one exists, and from an environment variable otherwise:
-
-```sql
-CREATE SECRET (TYPE starter_api, TOKEN 'your-token');      -- per session, never logged
-```
-
-```bash
-STARTER_API_TOKEN=your-token make run-http                # for servers and containers
-```
-
-Try it: the demo API's `/v1/auth` endpoint needs the published token `demo-token`.
-
-```sql
-SELECT count(*) FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1/auth');   -- fails: HTTP 401
-CREATE SECRET (TYPE starter_api, TOKEN 'demo-token');
-SELECT count(*) FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1/auth');   -- 25
-```
-
-Never bake credentials into the image or the source. If a function can't run without
-real credentials, its examples can't execute in CI either. Set `execute: false` on the
-metadata check for that worker (see `.github/workflows/ci.yml`), and add
-`LINT_ARGS ?= --no-execute` to the Makefile so local runs match.
-
-## Testing
-
-```bash
-make test-unit                 # fast TypeScript unit tests
-make test-sql                  # test/sql/*.test through DuckDB (stdio)
-make test-sql TRANSPORT=http   # …over HTTP (also: launch)
-make check                     # everything CI runs
-```
-
-`test/sql/*.test` files are [sqllogictest](https://duckdb.org/docs/stable/dev/sqllogictest/intro)
-scripts. `ci/run-integration.sh` runs them against your worker and fails on any
-unexpected skip, so a broken transport can't hide behind a green run.
-`fetch_items` is tested against `test/mock_api/server.py` so tests are fast and
-offline.
-
-**Testing against real data:** put live tests in their own `.test` file that starts with
-`require-env STARTER_LIVE`. They run only when that variable is set. Add the skip reason
-to `EXPECTED_SKIP_REASONS` in CI.
-
-## Metadata and the quality score
-
-DuckDB, agents and documentation tools discover your functions through their metadata:
-titles, descriptions, argument docs, examples and keywords.
-[vgi-lint](https://github.com/Query-farm/vgi-lint-check) checks it, and CI runs it on
-every push. Its settings live in `vgi-lint.toml`, which `make lint-explain`,
-`vgi-lint lint`, and CI all read. This template scores 100/100 with no findings.
-
-```bash
-make lint-explain                              # findings, each with its fix
-make lint-explain LINT_ARGS="--format agent"   # the same, grouped for coding agents
-make lint-ai                                   # optional: an agent must solve vgi-agent-tests.yaml
-```
-
-Each report also states an **assurance level**: how much was actually verified.
-
-| Level | Reached when | Here |
-|---|---|---|
-| L1 structural | the static metadata is clean | workers that need real credentials (`execute: false` in CI) |
-| L2 behavioural | the examples also run and return what they claim | **the CI gate** |
-| L3 semantic | an agent solves the worker's own test tasks, and the docs are reviewed | `make lint-ai`, before publishing |
-
-- **How strict.** Your copy fails on warnings (`fail_on = "warning"` in `vgi-lint.toml`).
-  Raise it to `"info"` before you publish the worker for others.
-- **The linter isn't pinned.** It tracks the current quality bar, so a new rule can flag
-  metadata that passed yesterday. Fix it, or waive the finding.
-- **Waivers.** If a finding is genuinely wrong for your worker, waive it in
-  `vgi-lint.toml` with a `kind` and a `reason`.
-- **Existing workers.** If you're adding this gate to a worker that already has
-  findings, record them with `vgi-lint lint --baseline vgi-lint-baseline --update-baseline`
-  and set `baseline` in `vgi-lint.toml`. After that, only new findings fail.
-
-Metadata lives in `src/meta.ts` and the `tags`/`examples` of each function.
-
-## Logging and debugging
-
-stdout carries the Arrow protocol, so **never print to stdout**. Log to stderr instead.
-Use `log` from `src/log.ts` (it writes to stderr); `--debug` or `--log-level debug` turns it up and also enables the SDK's own tracing (`VGI_DEBUG`).
-
-- Under DuckDB (stdio/launch), worker stderr shows up in DuckDB's error messages and
-  terminal.
-- In Docker it goes to `docker logs`.
-- `make debug` runs one query against the worker with debug logging on.
-
-## Deploying
-
-The same binary serves stdio (DuckDB starts it locally) or HTTP (you host it):
-
-```bash
-docker build -t weather-worker .
-docker run -p 8000:8000 -e STARTER_API_TOKEN=... weather-worker   # health: GET /health
+INSTALL icu FROM core;
+LOAD icu;
+SET TimeZone = 'UTC';
+ATTACH 'tides' (TYPE vgi,
+  LOCATION '/absolute/path/vgi-tides/bin/vgi-tides-worker');
 ```
 
 ```sql
-ATTACH 'starter' (TYPE vgi, LOCATION 'https://workers.example.com/starter');
+-- High and low tides at The Battery for tomorrow (UTC).
+SELECT time, height_m, event_type, datum
+FROM tides.main.tide_predictions(
+  '8518750', CAST(current_date + 1 AS VARCHAR), CAST(current_date + 1 AS VARCHAR))
+ORDER BY time;
+
+-- Predicted slack, flood and ebb are a separate product from tide height.
+SELECT time, event_type, velocity_major_mps, depth_m
+FROM tides.main.current_predictions(
+  'ACT0956', CAST(current_date + 1 AS VARCHAR), CAST(current_date + 1 AS VARCHAR))
+ORDER BY time;
+
+-- Discover observation-capable stations.
+SELECT station_id, name, latitude, longitude
+FROM tides.main.stations(station_kind := 'waterlevels')
+WHERE state = 'NY' ORDER BY name;
 ```
 
-Put hosted workers behind TLS and authentication. See
-[authentication](https://query.farm/vgi/authentication) for bearer tokens and JWTs, and
-[distributing a worker](https://query.farm/vgi/distributing-a-worker) for packaging.
-Pass secrets with `-e` or your platform's secret manager.
+Run [demo.sql](demo.sql) from the project directory after `make build`; it uses the local `bin/` launcher.
 
-## Releasing
+## Release binaries
 
-Push a tag like `v0.1.0`. The release workflow compiles the worker with `bun build --compile` into a standalone executable for Linux (x86-64, arm64), macOS (arm64) and Windows (x86-64), and attaches the archives to the GitHub release. Users download one file and point `LOCATION` at it, with no Bun or `node_modules` on the host. Every artifact is signed with cosign and
-carries SLSA build provenance. `ci/check-version.sh` makes sure the tag matches the
-version in `package.json`.
+[Release v0.1.0](https://github.com/Query-farm/vgi-tides/releases/tag/v0.1.0) provides self-contained executables for Linux x86-64/ARM64, macOS ARM64, and Windows x86-64. Extract the archive for your platform and point `ATTACH` at the executable; Bun and node_modules are not required for these binaries.
 
-## Using with coding agents
+```sql
+ATTACH 'tides' (TYPE vgi,
+  LOCATION '/absolute/path/vgi-tides-worker');
+```
 
-[AGENTS.md](AGENTS.md) is written for AI coding agents (Claude Code reads it via
-`CLAUDE.md`; Codex, Cursor and others read it directly). It covers the commands, the
-recipe for adding a function, the metadata checklist and the sharp edges. A good first
-prompt:
+Archives include SHA-256 checksums, keyless signatures and GitHub build-provenance attestations.
 
-> Read AGENTS.md. Replace `fetch_items` with `forecast(lat DOUBLE, lon DOUBLE)` that calls
-> the Open-Meteo API. Include full metadata, a mock-server test and a `STARTER_LIVE` test.
-> You're done when `make check` passes.
+## SQL interface
 
-## Keeping up with the template
+All functions are in `tides.main`. Required arguments are positional; optional arguments use `name := value`. Explicit NULL arguments are rejected; omit optional arguments to use defaults.
 
-`make template-diff` shows what changed upstream (CI, docs, examples) since your copy was
-made. Your copy records its template version in `.vgi-starter.json`.
+| Function / table | Parameters and behavior |
+| --- | --- |
+| `stations(station_kind := 'tidepredictions')` | Collections: `tidepredictions`, `waterlevels`, `currentpredictions`, `currents`. Coordinates, names and station type. |
+| `tide_predictions(station_id, start_date, end_date, datum := 'MLLW', step := 'hilo')` | Predicted heights in metres. `step`: `hilo`, `h`, or `1`, `5`, `6`, `10`, `15`, `30`, `60` minutes. H/L event labels exist only for high/low predictions. |
+| `water_levels(station_id, start_date, end_date, datum := 'MLLW')` | Six-minute observed heights in metres, sigma, NOAA quality code and original flags. |
+| `current_predictions(station_id, start_date, end_date, bin := 1, step := 'max_slack')` | Signed major-axis velocity in m/s, event type, mean flood/ebb directions and bin depth. `step`: `max_slack`, `h`, or `1`, `6`, `10`, `30`, `60` minutes. |
+| `currents(station_id, start_date, end_date, bin := 0)` | Observed speed in m/s and flow direction. Zero requests all available depth bins. |
+| `current_bins(station_id)` | Current-meter observation bin IDs, depth in metres and quality flags. Not a complete prediction-bin catalog. |
+| `products` | Local reference table: SQL function, NOAA product, output units. No network access. |
 
-## Learn more
+Dates are **inclusive UTC calendar days** in `YYYY-MM-DD` format. A query may span at most 366 days. The worker splits requests into non-overlapping chunks of at most seven days; all-bin current observations use one-day chunks. Rows stream by request, with no dependence on process-local state between batches.
 
-- [What is VGI?](https://query.farm/vgi) · [Getting started](https://query.farm/vgi/getting-started) · [Building a worker](https://query.farm/vgi/building-a-worker)
-- [TypeScript SDK docs](https://query.farm/vgi/docs/typescript/): [scalar tutorial](https://query.farm/vgi/docs/typescript/tutorial/scalar/), [table tutorial](https://query.farm/vgi/docs/typescript/tutorial/table/)
-- [Distributing a worker](https://query.farm/vgi/distributing-a-worker) · [Choosing a language](https://query.farm/vgi/languages) · [llms.txt](https://query.farm/vgi/llms.txt)
-- SDK source: [@query-farm/vgi](https://github.com/Query-farm/vgi-typescript) · RPC layer: [https://vgi-rpc-typescript.query.farm](https://vgi-rpc-typescript.query.farm)
+Subordinate tide stations require `step := 'hilo'` and `datum := 'MLLW'`; subordinate current stations require `step := 'max_slack'`. Other supported datums are `MHHW`, `MHW`, `MTL`, `MSL`, `MLW`, `NAVD`, `STND`, `IGLD`, `LWD`, and `CRD`, subject to station availability. NOAA errors for unsupported station/product combinations are preserved.
+
+`height_m` is relative to the returned **datum**. Astronomical tide predictions do not include weather-driven water-level changes. Currents are a separate product: high/low water does not establish slack current. `velocity_major_mps` is signed (flood positive, ebb negative); mean flood/ebb directions are not instantaneous bearings. Observation-bin depths can change with deployments; the metadata endpoint describes current configuration, not historical deployment depth.
+
+`quality` retains NOAA's `p` (preliminary) / `v` (verified) code; `flags` is unmodified. Missing measurements become `NULL`, including missing values in otherwise valid rows. An explicit NOAA “No data was found” response returns no rows. That can mean unavailable station/product/time coverage; it does not establish zero water level or zero current.
+
+Every fetched row includes `source_url` and `fetched_at`. Measurement timestamps are `TIMESTAMPTZ` in UTC. Set DuckDB's display time zone to UTC when comparing textual output; timestamps retain the same instant in other session time zones.
+
+## Requests and limits
+
+Requests have 20-second timeouts, at most four attempts, and exponential backoff for network failures, HTTP 429 and HTTP 5xx. `Retry-After` seconds and HTTP dates are honored; waits beyond 30 seconds fail with a retry message rather than retrying too early. Other HTTP errors fail immediately. Each response is capped at 8 MiB and each emitted batch at 50,000 rows.
+
+Upstream data is fetched at execution time; there is no persistent cache. Query results can change as NOAA updates its data. Unexpected response formats, unit changes, malformed numeric values and invalid timestamps fail explicitly.
+
+For mirrors or fixture servers, set these environment variables **before launching the worker**:
+
+- `TIDES_API_BASE_URL`: CO-OPS data API root; defaults to `https://api.tidesandcurrents.noaa.gov/api/prod`.
+- `TIDES_METADATA_BASE_URL`: metadata API root; defaults to `https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi`.
+
+## Tests
+
+```sh
+make check          # Biome, strict TypeScript, unit tests, Haybarn SQL on all transports, metadata
+make verify-stock   # Offline NOAA fixtures through stock DuckDB 2.0.0
+make test-live      # Separate live NOAA requests through stock DuckDB 2.0.0
+```
+
+`make check` retains the starter's stdio, Unix-socket (`launch:`), HTTP and recipe checks, using Haybarn **2.0.0rc11**. SQL fixture tests validate values, empty responses, argument errors, joins and row counts beyond a single DuckDB batch. Live availability is deliberately separate. Tide-current live verification includes historical observations from November 12, 2025, because the sampled station may lack recent observations.
+
+`vgi-worker.json` records the positive SQL assertions; `test/error-checks.json` records expected failures. `make verify-stock` and `make test-live` produce `verification-stock.json` and `verification-live.json`. [VERIFICATION.md](VERIFICATION.md) records tested versions and results.
+
+## HTTP and Unix sockets
+
+```sh
+make run-http  # loopback HTTP on port 8000
+```
+
+```sql
+ATTACH 'tides' (TYPE vgi, LOCATION 'http://127.0.0.1:8000');
+-- Or let DuckDB manage the Unix-socket process:
+ATTACH 'tides' (TYPE vgi, LOCATION 'launch:/absolute/path/vgi-tides/bin/vgi-tides-worker');
+```
+
+The worker also retains the starter's Dockerfile and release workflows. These files do not publish or deploy anything by themselves. Diagnostics go to stderr; stdout is reserved for the Arrow protocol in stdio mode.
+
+## Sources
+
+- [CO-OPS data API](https://api.tidesandcurrents.noaa.gov/api/prod/)
+- [Response fields and quality flags](https://api.tidesandcurrents.noaa.gov/api/prod/responseHelp.html)
+- [CO-OPS station metadata](https://api.tidesandcurrents.noaa.gov/mdapi/prod/)
+
+## Starter and dependencies
+
+Based on [Query-farm/vgi-starter-typescript](https://github.com/Query-farm/vgi-starter-typescript), template 1.3.0, commit `145aedcb87ed8fadde6dfb8a26197d0d68112369`. Resolved SDK: `@query-farm/vgi` **0.50.0**, RPC **0.29.7**, Arrow **21.1.1**. Pins and lockfiles are preserved; `tides` adds only its domain-specific implementation.
+
+`make template-diff` reviews upstream starter changes. This project is independent of sibling workers and does not require their source trees.
 
 ## Support
 
-Open an issue on this repository. For VGI itself, see [query.farm](https://query.farm).
+Report issues with the query, worker version and NOAA source URL. Do not include credentials or unrelated private data. This implementation has no API credentials.
 
-## Authorship & license
+## License
 
-The starter template is written by [Query.Farm](https://query.farm) and released under
-the [BSD Zero Clause License](LICENSE) (0BSD). Use it for anything, with no attribution
-required. Replace this section with your own license once the code is yours.
+[BSD Zero Clause](LICENSE), inherited from the Query Farm starter.

@@ -1,0 +1,275 @@
+{
+  "status": "passed",
+  "engine": "duckdb",
+  "engine_version": "2.0.0",
+  "worker": [
+    "bin/vgi-tides-worker"
+  ],
+  "attach_sql": "ATTACH 'tides' AS \"tides\" (TYPE vgi, LOCATION 'bin/vgi-tides-worker');",
+  "checks": [
+    {
+      "name": "stations",
+      "sql": "SELECT station_id, name FROM tides.main.stations() ORDER BY station_id",
+      "status": "passed",
+      "rows": [
+        [
+          "8518750",
+          "The Battery"
+        ],
+        [
+          "9414290",
+          "San Francisco"
+        ]
+      ],
+      "columns": [
+        "station_id",
+        "name"
+      ]
+    },
+    {
+      "name": "tide UTC and height",
+      "sql": "SELECT strftime(time, '%Y-%m-%d %H:%M:%S'), CAST(round(height_m*100) AS INTEGER), event_type, datum FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-01') ORDER BY time",
+      "status": "passed",
+      "rows": [
+        [
+          "2026-01-01 00:00:00",
+          120,
+          "H",
+          "MLLW"
+        ],
+        [
+          "2026-01-01 06:00:00",
+          20,
+          "L",
+          "MLLW"
+        ],
+        [
+          "2026-01-01 12:00:00",
+          150,
+          "H",
+          "MLLW"
+        ],
+        [
+          "2026-01-01 18:00:00",
+          10,
+          "L",
+          "MLLW"
+        ]
+      ],
+      "columns": [
+        "strftime(\"time\", '%Y-%m-%d %H:%M:%S')",
+        "CAST(round((height_m * 100)) AS INTEGER)",
+        "event_type",
+        "datum"
+      ]
+    },
+    {
+      "name": "multiple request batches",
+      "sql": "SELECT count(*), count(DISTINCT time), count(DISTINCT source_url) FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-16')",
+      "status": "passed",
+      "rows": [
+        [
+          64,
+          64,
+          3
+        ]
+      ],
+      "columns": [
+        "count_star()",
+        "count(DISTINCT \"time\")",
+        "count(DISTINCT source_url)"
+      ]
+    },
+    {
+      "name": "named interval and datum",
+      "sql": "SELECT count(*), min(datum) FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-01', step := 'h', datum := 'MSL')",
+      "status": "passed",
+      "rows": [
+        [
+          24,
+          "MSL"
+        ]
+      ],
+      "columns": [
+        "count_star()",
+        "min(datum)"
+      ]
+    },
+    {
+      "name": "observations preserve null zero QC",
+      "sql": "SELECT count(*),count(height_m), CAST(round(min(height_m)*100) AS INTEGER), min(quality), min(flags) FROM tides.main.water_levels('8518750','2026-01-01','2026-01-01')",
+      "status": "passed",
+      "rows": [
+        [
+          4,
+          3,
+          -30,
+          "p",
+          "1,0,0,0"
+        ]
+      ],
+      "columns": [
+        "count_star()",
+        "count(height_m)",
+        "CAST(round((min(height_m) * 100)) AS INTEGER)",
+        "min(quality)",
+        "min(flags)"
+      ]
+    },
+    {
+      "name": "current predictions signed conversion",
+      "sql": "SELECT event_type, CAST(round(velocity_major_mps*1000) AS INTEGER), bin, CAST(depth_m*10 AS INTEGER) FROM tides.main.current_predictions('ACT0956','2026-01-01','2026-01-01', bin := 2) ORDER BY time",
+      "status": "passed",
+      "rows": [
+        [
+          "flood",
+          250,
+          2,
+          18
+        ],
+        [
+          "slack",
+          0,
+          2,
+          18
+        ],
+        [
+          "ebb",
+          -125,
+          2,
+          18
+        ],
+        [
+          "slack",
+          0,
+          2,
+          18
+        ]
+      ],
+      "columns": [
+        "event_type",
+        "CAST(round((velocity_major_mps * 1000)) AS INTEGER)",
+        "bin",
+        "CAST((depth_m * 10) AS INTEGER)"
+      ]
+    },
+    {
+      "name": "all-bin currents and daily batches",
+      "sql": "SELECT count(*),count(DISTINCT source_url), CAST(round(sum(speed_mps)*100) AS INTEGER) FROM tides.main.currents('cb0102','2026-01-01','2026-01-02')",
+      "status": "passed",
+      "rows": [
+        [
+          4,
+          2,
+          150
+        ]
+      ],
+      "columns": [
+        "count_star()",
+        "count(DISTINCT source_url)",
+        "CAST(round((sum(speed_mps) * 100)) AS INTEGER)"
+      ]
+    },
+    {
+      "name": "bin metadata",
+      "sql": "SELECT bin, CAST(depth_m*10 AS INTEGER), qc_flag FROM tides.main.current_bins('cb0102') ORDER BY bin",
+      "status": "passed",
+      "rows": [
+        [
+          1,
+          18,
+          1
+        ],
+        [
+          2,
+          36,
+          0
+        ]
+      ],
+      "columns": [
+        "bin",
+        "CAST((depth_m * 10) AS INTEGER)",
+        "qc_flag"
+      ]
+    },
+    {
+      "name": "empty observations",
+      "sql": "SELECT count(*) FROM tides.main.water_levels('0000000','2026-01-01','2026-01-02')",
+      "status": "passed",
+      "rows": [
+        [
+          0
+        ]
+      ],
+      "columns": [
+        "count_star()"
+      ]
+    },
+    {
+      "name": "empty bins",
+      "sql": "SELECT count(*) FROM tides.main.current_bins('0000000')",
+      "status": "passed",
+      "rows": [
+        [
+          0
+        ]
+      ],
+      "columns": [
+        "count_star()"
+      ]
+    },
+    {
+      "name": "join predictions and stations",
+      "sql": "SELECT s.name, count(*) FROM tides.main.stations() s JOIN tides.main.tide_predictions('8518750','2026-01-01','2026-01-01') p USING(station_id) GROUP BY s.name",
+      "status": "passed",
+      "rows": [
+        [
+          "The Battery",
+          4
+        ]
+      ],
+      "columns": [
+        "name",
+        "count_star()"
+      ]
+    },
+    {
+      "name": "provenance and timestamp types",
+      "sql": "SELECT CAST(bool_and(fetched_at IS NOT NULL AND source_url LIKE '%time_zone=gmt%') AS INTEGER), typeof(min(time)) FROM tides.main.water_levels('8518750','2026-01-01','2026-01-01')",
+      "status": "passed",
+      "rows": [
+        [
+          1,
+          "TIMESTAMP WITH TIME ZONE"
+        ]
+      ],
+      "columns": [
+        "CAST(bool_and(((fetched_at IS NOT NULL) AND (source_url ~~ '%time_zone=gmt%'))) AS INTEGER)",
+        "typeof(min(\"time\"))"
+      ]
+    },
+    {
+      "name": "offline reference table",
+      "sql": "SELECT sql_function, output_units FROM tides.main.products WHERE output_units = 'm/s' ORDER BY sql_function",
+      "status": "passed",
+      "rows": [
+        [
+          "current_predictions",
+          "m/s"
+        ],
+        [
+          "currents",
+          "m/s"
+        ]
+      ],
+      "columns": [
+        "sql_function",
+        "output_units"
+      ]
+    }
+  ],
+  "extension_version": "e75482339d",
+  "extension_repository": "query_farm",
+  "platform": "osx_arm64",
+  "elapsed_seconds": 0.987
+}

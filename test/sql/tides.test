@@ -1,0 +1,138 @@
+# NOAA fixture assertions over stdio, launch and HTTP.
+require vgi
+
+require-env TIDES_WORKER
+
+statement ok
+INSTALL icu FROM core;
+
+statement ok
+LOAD icu;
+
+statement ok
+SET TimeZone='UTC';
+
+statement ok
+ATTACH 'tides' (TYPE vgi, LOCATION '{TIDES_WORKER}');
+
+# stations
+query TT
+SELECT station_id, name FROM tides.main.stations() ORDER BY station_id;
+----
+8518750	The Battery
+9414290	San Francisco
+
+# tide UTC and height
+query TITT
+SELECT strftime(time, '%Y-%m-%d %H:%M:%S'), CAST(round(height_m*100) AS INTEGER), event_type, datum FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-01') ORDER BY time;
+----
+2026-01-01 00:00:00	120	H	MLLW
+2026-01-01 06:00:00	20	L	MLLW
+2026-01-01 12:00:00	150	H	MLLW
+2026-01-01 18:00:00	10	L	MLLW
+
+# multiple request batches
+query III
+SELECT count(*), count(DISTINCT time), count(DISTINCT source_url) FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-16');
+----
+64	64	3
+
+# named interval and datum
+query IT
+SELECT count(*), min(datum) FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-01', step := 'h', datum := 'MSL');
+----
+24	MSL
+
+# observations preserve null zero QC
+query IIITT
+SELECT count(*),count(height_m), CAST(round(min(height_m)*100) AS INTEGER), min(quality), min(flags) FROM tides.main.water_levels('8518750','2026-01-01','2026-01-01');
+----
+4	3	-30	p	1,0,0,0
+
+# current predictions signed conversion
+query TIII
+SELECT event_type, CAST(round(velocity_major_mps*1000) AS INTEGER), bin, CAST(depth_m*10 AS INTEGER) FROM tides.main.current_predictions('ACT0956','2026-01-01','2026-01-01', bin := 2) ORDER BY time;
+----
+flood	250	2	18
+slack	0	2	18
+ebb	-125	2	18
+slack	0	2	18
+
+# all-bin currents and daily batches
+query III
+SELECT count(*),count(DISTINCT source_url), CAST(round(sum(speed_mps)*100) AS INTEGER) FROM tides.main.currents('cb0102','2026-01-01','2026-01-02');
+----
+4	2	150
+
+# bin metadata
+query III
+SELECT bin, CAST(depth_m*10 AS INTEGER), qc_flag FROM tides.main.current_bins('cb0102') ORDER BY bin;
+----
+1	18	1
+2	36	0
+
+# empty observations
+query I
+SELECT count(*) FROM tides.main.water_levels('0000000','2026-01-01','2026-01-02');
+----
+0
+
+# empty bins
+query I
+SELECT count(*) FROM tides.main.current_bins('0000000');
+----
+0
+
+# join predictions and stations
+query TI
+SELECT s.name, count(*) FROM tides.main.stations() s JOIN tides.main.tide_predictions('8518750','2026-01-01','2026-01-01') p USING(station_id) GROUP BY s.name;
+----
+The Battery	4
+
+# provenance and timestamp types
+query IT
+SELECT CAST(bool_and(fetched_at IS NOT NULL AND source_url LIKE '%time_zone=gmt%') AS INTEGER), typeof(min(time)) FROM tides.main.water_levels('8518750','2026-01-01','2026-01-01');
+----
+1	TIMESTAMP WITH TIME ZONE
+
+statement error
+SELECT * FROM tides.main.water_levels(NULL,'2026-01-01','2026-01-01');
+----
+<REGEX>:.*
+
+statement error
+SELECT * FROM tides.main.tide_predictions('8518750','2026-02-30','2026-03-01');
+----
+Invalid date
+
+statement error
+SELECT * FROM tides.main.tide_predictions('8518750','2026-01-02','2026-01-01');
+----
+end_date
+
+statement error
+SELECT * FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-01', step := '2');
+----
+<REGEX>:.*
+
+statement error
+SELECT * FROM tides.main.tide_predictions('9999999','2026-01-01','2026-01-01');
+----
+Invalid station
+
+statement error
+SELECT * FROM tides.main.water_levels('8888888','2026-01-01','2026-01-01');
+----
+array
+
+statement error
+SELECT * FROM tides.main.water_levels('HTTP001','2026-01-01','2026-01-01');
+----
+HTTP 404
+
+
+query TT
+SELECT sql_function, output_units FROM tides.main.products WHERE output_units = 'm/s' ORDER BY sql_function;
+----
+current_predictions	m/s
+currents	m/s

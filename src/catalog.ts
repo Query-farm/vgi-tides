@@ -1,17 +1,11 @@
-/**
- * Assemble the functions into the catalog DuckDB attaches.
- *
- * To add a function: write it (see `greet.ts` / `sequence.ts` /
- * `fetch_items.ts`), then add it to `FUNCTIONS` below.
- */
+import { referenceTable } from "./reference.ts";
+/** Assemble NOAA readers and reference tables into the public catalog. */
 
 import type { CatalogDescriptor, VgiFunction } from "@query-farm/vgi";
-import { API_SECRET_TYPE, fetchItems } from "./fetch_items.ts";
-import { greet, greetWithStyle } from "./greet.ts";
 import { CATALOG_DOC_MD, CATALOG_NAME, CATALOG_TAGS, SCHEMA_DOC_MD, SCHEMA_TAGS, SOURCE_URL } from "./meta.ts";
-import { sequenceTable } from "./sequence.ts";
+import { FUNCTIONS } from "./noaa.ts";
 
-export const FUNCTIONS: VgiFunction[] = [greet, greetWithStyle, sequenceTable, fetchItems];
+export { FUNCTIONS } from "./noaa.ts";
 
 interface Example {
   description: string;
@@ -46,12 +40,12 @@ export const CATALOG: CatalogDescriptor = {
   comment: CATALOG_DOC_MD,
   sourceUrl: SOURCE_URL,
   tags: CATALOG_TAGS,
-  secretTypes: [API_SECRET_TYPE],
   schemas: [
     {
       path: ["main"],
       comment: SCHEMA_DOC_MD,
       functions: FUNCTIONS,
+      tables: [referenceTable],
       tags: { ...SCHEMA_TAGS, "vgi.example_queries": JSON.stringify(ALL_EXAMPLES) },
     },
   ],

@@ -1,0 +1,30 @@
+[
+  {
+    "sql": "SELECT * FROM tides.main.water_levels(NULL,'2026-01-01','2026-01-01')",
+    "error": ".*"
+  },
+  {
+    "sql": "SELECT * FROM tides.main.tide_predictions('8518750','2026-02-30','2026-03-01')",
+    "error": "Invalid date"
+  },
+  {
+    "sql": "SELECT * FROM tides.main.tide_predictions('8518750','2026-01-02','2026-01-01')",
+    "error": "end_date"
+  },
+  {
+    "sql": "SELECT * FROM tides.main.tide_predictions('8518750','2026-01-01','2026-01-01', step := '2')",
+    "error": ".*"
+  },
+  {
+    "sql": "SELECT * FROM tides.main.tide_predictions('9999999','2026-01-01','2026-01-01')",
+    "error": "Invalid station"
+  },
+  {
+    "sql": "SELECT * FROM tides.main.water_levels('8888888','2026-01-01','2026-01-01')",
+    "error": "array"
+  },
+  {
+    "sql": "SELECT * FROM tides.main.water_levels('HTTP001','2026-01-01','2026-01-01')",
+    "error": "HTTP 404"
+  }
+]

@@ -1,16 +1,15 @@
-# Private graders for the public vgi.agent_test_tasks in the worker's catalog metadata.
-# `vgi-lint lint --ai` runs an agent on each prompt and grades it with check_sql.
-# See https://github.com/Query-farm/vgi-lint-check (VGI920).
 tasks:
-  - name: formal_greeting
-    reference_sql: SELECT starter.main.greet('Grace', 'formal') AS greeting
-  - name: sum_of_squares
-    reference_sql: SELECT sum(squared) AS total FROM starter.main.sequence_table(10)
-  - name: stepped_sequence
-    reference_sql: SELECT n FROM starter.main.sequence_table(4, step := 5) ORDER BY n
-  # Reads the public demo API (https://vgi-starter-api.query-farm.services/v1).
-  - name: items_per_category
-    check_sql: >-
-      SELECT count(*) = 3 AND sum(items) = 25
-      FROM (SELECT category, count(*) AS items
-            FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1') GROUP BY category)
+  - name: stations_query
+    reference_sql: "SELECT station_id, name FROM tides.main.stations() ORDER BY station_id LIMIT 5"
+  - name: tide_predictions_query
+    reference_sql: "SELECT time, height_m FROM tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-02') ORDER BY time"
+  - name: water_levels_query
+    reference_sql: "SELECT time, height_m FROM tides.main.water_levels('8518750', '2026-01-01', '2026-01-02') ORDER BY time"
+  - name: current_predictions_query
+    reference_sql: "SELECT time, velocity_major_mps FROM tides.main.current_predictions('ACT0956', '2026-01-01', '2026-01-02') ORDER BY time"
+  - name: currents_query
+    reference_sql: "SELECT time, speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-02') ORDER BY time"
+  - name: current_bins_query
+    reference_sql: "SELECT bin, depth_m FROM tides.main.current_bins('cb0102') ORDER BY bin"
+  - name: reference_units
+    reference_sql: "SELECT sql_function, output_units FROM tides.main.products WHERE output_units = 'm/s' ORDER BY sql_function"

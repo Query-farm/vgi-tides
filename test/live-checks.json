@@ -1,0 +1,56 @@
+[
+  {
+    "name": "live station discovery",
+    "sql": "SELECT CAST(count(*)>100 AS INTEGER) FROM tides.main.stations()",
+    "rows": [
+      [
+        1
+      ]
+    ]
+  },
+  {
+    "name": "live tide predictions",
+    "sql": "SELECT CAST(count(*)>0 AND count(height_m)=count(*) AS INTEGER) FROM tides.main.tide_predictions('8518750',CAST(current_date AS VARCHAR),CAST(current_date AS VARCHAR))",
+    "rows": [
+      [
+        1
+      ]
+    ]
+  },
+  {
+    "name": "live observed water levels",
+    "sql": "SELECT CAST(count(*)>0 AS INTEGER) FROM tides.main.water_levels('8518750',CAST(current_date-1 AS VARCHAR),CAST(current_date-1 AS VARCHAR))",
+    "rows": [
+      [
+        1
+      ]
+    ]
+  },
+  {
+    "name": "live current predictions",
+    "sql": "SELECT CAST(count(*)>0 AND count(velocity_major_mps)=count(*) AS INTEGER) FROM tides.main.current_predictions('ACT0956',CAST(current_date AS VARCHAR),CAST(current_date AS VARCHAR))",
+    "rows": [
+      [
+        1
+      ]
+    ]
+  },
+  {
+    "name": "live current bins",
+    "sql": "SELECT CAST(count(*)>0 AND count(bin)=count(*) AND count(depth_m)=count(*) AS INTEGER) FROM tides.main.current_bins('cb0102')",
+    "rows": [
+      [
+        1
+      ]
+    ]
+  },
+  {
+    "name": "live NOAA historical current observations",
+    "sql": "SELECT CAST(count(*)>0 AND count(speed_mps)=count(*) AS INTEGER) FROM tides.main.currents('cb0102','2025-11-12','2025-11-12',bin := 4)",
+    "rows": [
+      [
+        1
+      ]
+    ]
+  }
+]
