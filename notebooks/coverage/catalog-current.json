@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-tides",
+  "revision": "fb22d6626686e621b85a30faf2305f3e225da601",
+  "captured_at": "2026-11-14T23:42:47.740162+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "evidence": [
+    {
+      "path": "coverage/catalog-provenance.json",
+      "sha256": "3561acbe47a981507033a8259dc98b58a62181e0b301ef70a5f21dfd5bfb1fb9",
+      "description": "Actual release/current catalog acquisition, source drift and read-only/recorded boundaries."
+    },
+    {
+      "path": "coverage/current-functions.json",
+      "sha256": "66cf9d13c057887bbdc38328fe63e99f826cbfbc6dfedc665b06834b03b31e86",
+      "description": "Complete actual worker-filtered duckdb_functions() native export; all public names retained."
+    },
+    {
+      "path": "coverage/current-tables.json",
+      "sha256": "3179523ac831133038e4f7d162ef77529c614d2a2f49383eef6e4ce5cd7e2184",
+      "description": "Complete actual worker-filtered duckdb_tables() native export; all public names retained."
+    },
+    {
+      "path": "coverage/current-views.json",
+      "sha256": "1d8d1ee3404ad33e1213bfc2a72db9dff3328a90e1d8145f6f0056ab7459b54c",
+      "description": "Complete actual worker-filtered duckdb_views() native export; all public names retained."
+    },
+    {
+      "path": "coverage/current-database.json",
+      "sha256": "cf693fe312d846d42ed6fbceaa82a25ee938409509c65b9fe15f0ccb277512f4",
+      "description": "Actual catalog title/subtitle and metadata."
+    },
+    {
+      "path": "coverage/current-source-registration.json",
+      "sha256": "5c74e768c9fd36e0d9d304839d069b3334e18d2020496960f3e0d98ca84752fe",
+      "description": "Full current source and complete release-to-current source/dependency diff."
+    }
+  ],
+  "objects": [
+    {
+      "schema": "main",
+      "name": "currents",
+      "kind": "function",
+      "signatures": [
+        "currents(VARCHAR, VARCHAR, VARCHAR, BIGINT) -> TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "current_predictions",
+      "kind": "function",
+      "signatures": [
+        "current_predictions(VARCHAR, VARCHAR, VARCHAR, VARCHAR, BIGINT) -> TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "stations",
+      "kind": "function",
+      "signatures": [
+        "stations(VARCHAR) -> TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "tide_predictions",
+      "kind": "function",
+      "signatures": [
+        "tide_predictions(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR) -> TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "water_levels",
+      "kind": "function",
+      "signatures": [
+        "water_levels(VARCHAR, VARCHAR, VARCHAR, VARCHAR) -> TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "current_bins",
+      "kind": "function",
+      "signatures": [
+        "current_bins(VARCHAR) -> TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "products",
+      "kind": "table",
+      "signatures": [
+        "TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    }
+  ]
+}

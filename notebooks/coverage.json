@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "released": {
+      "path": "coverage/catalog-released.json",
+      "sha256": "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "catalog_sha256": "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+        "notes": "All six read functions and products reference table retained, including all current APIs. Both actual runtime catalogs expose six functions plus the products table and no views: seven logical names. Native input signatures match. Current main adds stations.bin, richer HTTP error detail and metadata examples. Notebook SQL executes release v0.1.0 and explicitly uses the recorded raw metadata for its prediction-bin choice. Current-interface coverage is separate from exact runtime and does not claim execution of the new column."
+      }
+    },
+    "current": {
+      "path": "coverage/catalog-current.json",
+      "sha256": "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "catalog_sha256": "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e",
+        "notes": "All six read functions and products reference table retained, including all current APIs. Both actual runtime catalogs expose six functions plus the products table and no views: seven logical names. Native input signatures match. Current main adds stations.bin, richer HTTP error detail and metadata examples. Notebook SQL executes release v0.1.0 and explicitly uses the recorded raw metadata for its prediction-bin choice. Current-interface coverage is separate from exact runtime and does not claim execution of the new column."
+      }
+    }
+  },
+  "notebooks": [
+    {
+      "path": "01_compare_observed_and_predicted_heights.ipynb",
+      "sha256": "8a591f861c1e1a17b1776d38c706786e32aa42cae7d2aa3a35c5a9e87984d005",
+      "execution": {
+        "path": "coverage/run-01.json",
+        "sha256": "9cb32761721c1e322be94d5f8df7791666d52451bf3000bad42eb5f0d9b26cde"
+      }
+    },
+    {
+      "path": "02_same_station_different_current_measurements.ipynb",
+      "sha256": "f89c3e939146424310e32f516b8df2cb932a6ebe3ff0059e26123f602558f3c8",
+      "execution": {
+        "path": "coverage/run-02.json",
+        "sha256": "396d2bb15fd5408bef2365a851a15f09eec4cb93b108b06b1e0a30f4ae92dac0"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "object": {
+        "schema": "main",
+        "name": "products"
+      },
+      "notebook": "02_same_station_different_current_measurements.ipynb",
+      "sql": [
+        {
+          "cell": "metadata-sql",
+          "reference": "tides.main.products"
+        }
+      ],
+      "narrative_cells": [
+        "attach-story"
+      ],
+      "result_cells": [
+        "metadata-sql",
+        "gate-result",
+        "speed-chart"
+      ],
+      "interpretation_cells": [
+        "gate-result"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "notebook_sha256": "f89c3e939146424310e32f516b8df2cb932a6ebe3ff0059e26123f602558f3c8",
+        "catalog_sha256": [
+          "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+          "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e"
+        ],
+        "purpose": "Use product units to distinguish physical quantities before comparing time series.",
+        "finding": "Reference table distinguishes current predictions/observations in m/s and bin depth in m. Equal units do not establish equality of signed major-axis component and scalar magnitude. No current residual is computed."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "stations"
+      },
+      "notebook": "02_same_station_different_current_measurements.ipynb",
+      "sql": [
+        {
+          "cell": "metadata-sql",
+          "reference": "tides.main.stations"
+        }
+      ],
+      "narrative_cells": [
+        "attach-story"
+      ],
+      "result_cells": [
+        "metadata-sql",
+        "gate-result"
+      ],
+      "interpretation_cells": [
+        "gate-result"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "notebook_sha256": "f89c3e939146424310e32f516b8df2cb932a6ebe3ff0059e26123f602558f3c8",
+        "catalog_sha256": [
+          "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+          "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e"
+        ],
+        "purpose": "Resolve station identity and collection capability without assuming each station row is unique by ID.",
+        "finding": "Full actual observation/prediction station collections identify Cherry Point. Released output lacks current main bin column; raw captured prediction metadata makes bin20 choice explicit. Station identity admits240 rows but does not align time or define missing depth."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "current_bins"
+      },
+      "notebook": "02_same_station_different_current_measurements.ipynb",
+      "sql": [
+        {
+          "cell": "metadata-sql",
+          "reference": "tides.main.current_bins"
+        }
+      ],
+      "narrative_cells": [
+        "depth-story"
+      ],
+      "result_cells": [
+        "metadata-sql",
+        "gate-result",
+        "checks-result"
+      ],
+      "interpretation_cells": [
+        "gate-result"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "notebook_sha256": "f89c3e939146424310e32f516b8df2cb932a6ebe3ff0059e26123f602558f3c8",
+        "catalog_sha256": [
+          "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+          "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e"
+        ],
+        "purpose": "Test whether a matching bin establishes matching observation depth.",
+        "finding": "All30 returned observation-bin depths are NULL, including selected bins1/20. No distance is substituted; prediction depth does not establish observation depth. The bin20 experiment fixes only identity, leaving zero rows with known observation depth."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "currents"
+      },
+      "notebook": "02_same_station_different_current_measurements.ipynb",
+      "sql": [
+        {
+          "cell": "fetch-sql",
+          "reference": "tides.main.currents"
+        }
+      ],
+      "narrative_cells": [
+        "depth-story"
+      ],
+      "result_cells": [
+        "fetch-sql",
+        "gate-result",
+        "speed-chart",
+        "phase-chart",
+        "checks-result"
+      ],
+      "interpretation_cells": [
+        "gate-result"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "notebook_sha256": "f89c3e939146424310e32f516b8df2cb932a6ebe3ff0059e26123f602558f3c8",
+        "catalog_sha256": [
+          "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+          "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e"
+        ],
+        "purpose": "Retain two complete observed current series and audit timestamp phase before comparison.",
+        "finding": "Bins1/20 each return240 scalar speeds with directions; flags are absent. Raw recorded cm/s independently confirm m/s conversion. Selection1→20 leaves480 source rows fixed; observations at phase3 have zero exact-time pairs with phase0 predictions."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "current_predictions"
+      },
+      "notebook": "02_same_station_different_current_measurements.ipynb",
+      "sql": [
+        {
+          "cell": "fetch-sql",
+          "reference": "tides.main.current_predictions"
+        }
+      ],
+      "narrative_cells": [
+        "attach-story"
+      ],
+      "result_cells": [
+        "fetch-sql",
+        "gate-result",
+        "speed-chart",
+        "phase-chart",
+        "checks-result"
+      ],
+      "interpretation_cells": [
+        "gate-result"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "notebook_sha256": "f89c3e939146424310e32f516b8df2cb932a6ebe3ff0059e26123f602558f3c8",
+        "catalog_sha256": [
+          "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+          "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e"
+        ],
+        "purpose": "Interpret signed prediction and its bin/depth/time context before forming a residual.",
+        "finding": "Bin20 has240 signed major-axis velocities, preserving positive flood and negative ebb, with prediction depth14.3m. Mean bearings are not instantaneous directions. Timestamp phase and missing observation depth prevent the intended naive residual even when bin identity matches."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "water_levels"
+      },
+      "notebook": "01_compare_observed_and_predicted_heights.ipynb",
+      "sql": [
+        {
+          "cell": "627b52d8",
+          "reference": "tides.main.water_levels"
+        }
+      ],
+      "narrative_cells": [
+        "421aea77"
+      ],
+      "result_cells": [
+        "be10cfd8",
+        "20cdb46e",
+        "611c9ce8",
+        "0e92051c",
+        "6c964657"
+      ],
+      "interpretation_cells": [
+        "20cdb46e"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "notebook_sha256": "8a591f861c1e1a17b1776d38c706786e32aa42cae7d2aa3a35c5a9e87984d005",
+        "catalog_sha256": [
+          "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+          "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e"
+        ],
+        "purpose": "Audit verified water observations, then compare exact station/time/datum keys.",
+        "finding": "240 six-minute MLLW pairs pass explicit v/0,0,0,0 quality rule. Observed-minus-predicted ranges0.032–0.243m; threshold0.15→0.20 changes exceedance82→32 without changing measurements. Residual is not pure storm surge or a danger probability."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "tide_predictions"
+      },
+      "notebook": "01_compare_observed_and_predicted_heights.ipynb",
+      "sql": [
+        {
+          "cell": "627b52d8",
+          "reference": "tides.main.tide_predictions"
+        }
+      ],
+      "narrative_cells": [
+        "8d396623"
+      ],
+      "result_cells": [
+        "be10cfd8",
+        "20cdb46e",
+        "611c9ce8",
+        "0e92051c",
+        "6c964657"
+      ],
+      "interpretation_cells": [
+        "20cdb46e"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_ortools",
+        "reviewed_at": "2026-11-14T23:42:47.740162+00:00",
+        "notebook_sha256": "8a591f861c1e1a17b1776d38c706786e32aa42cae7d2aa3a35c5a9e87984d005",
+        "catalog_sha256": [
+          "46a0274cc3dbecb68864438fc2aa679f12c123077fe89c767423cf8e76bd7af1",
+          "9eb49d557ce6810941849999673f253679d1f2b56ff1540bdb92f57c2f8d678e"
+        ],
+        "purpose": "Align astronomical predictions at explicit six-minute interval and vertical datum.",
+        "finding": "240 predictions align exactly with available verified observations on station/time/MLLW. Mean difference0.132m and RMS0.142m describe these samples, not calibrated uncertainty. Threshold-only experiment preserves source rows and empirical distribution."
+      }
+    }
+  ]
+}

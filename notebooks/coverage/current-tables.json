@@ -1,0 +1,51 @@
+{
+  "query": "SELECT * FROM duckdb_tables() WHERE database_name='tides'",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "schema_oid",
+    "table_name",
+    "table_oid",
+    "comment",
+    "tags",
+    "internal",
+    "temporary",
+    "has_primary_key",
+    "estimated_size",
+    "column_count",
+    "index_count",
+    "check_constraint_count",
+    "sql"
+  ],
+  "rows": [
+    [
+      "tides",
+      22592,
+      "main",
+      22593,
+      "products",
+      22792,
+      "Supported CO-OPS products and the units returned by this worker",
+      {
+        "domain": "marine",
+        "vgi.category": "api",
+        "vgi.doc_llm": "A built-in reference of the supported NOAA CO-OPS product mappings. Query sql_function, noaa_product and output_units to discover the right reader. This table is deterministic, requires no arguments and makes no network requests. Water heights also carry a datum; a unit alone is not enough to compare vertical references.",
+        "vgi.doc_md": "## Products Reference\n\nA built-in reference of the supported NOAA CO-OPS product mappings. Query sql_function, noaa_product and output_units to discover the right reader. This table is deterministic, requires no arguments and makes no network requests. Water heights also carry a datum; a unit alone is not enough to compare vertical references.\n\n### Result columns\n\n| Column | Meaning |\n| --- | --- |\n| sql_function | Worker function to call. |\n| noaa_product | NOAA product or metadata resource. |\n| output_units | Primary measurement units returned by the worker. |",
+        "vgi.example_queries": "[{\"sql\":\"SELECT sql_function, output_units FROM tides.main.products WHERE output_units = 'm/s' ORDER BY sql_function\",\"description\":\"Supported CO-OPS products and the units returned by this worker\"}]",
+        "vgi.executable_examples": "[{\"sql\":\"SELECT sql_function, output_units FROM tides.main.products WHERE output_units = 'm/s' ORDER BY sql_function\",\"description\":\"Supported CO-OPS products and the units returned by this worker\",\"expected_result\":[[\"current_predictions\",\"m/s\"],[\"currents\",\"m/s\"]]}]",
+        "vgi.keywords": "[\"reference\",\"noaa\",\"units\",\"tides\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"sql_function\",\"type\":\"VARCHAR\",\"description\":\"Worker function to call.\"},{\"name\":\"noaa_product\",\"type\":\"VARCHAR\",\"description\":\"NOAA product or metadata resource.\"},{\"name\":\"output_units\",\"type\":\"VARCHAR\",\"description\":\"Primary measurement units returned by the worker.\"}]",
+        "vgi.title": "Products Reference"
+      },
+      false,
+      false,
+      true,
+      0,
+      3,
+      1,
+      0,
+      "CREATE TABLE products(sql_function VARCHAR, noaa_product VARCHAR NOT NULL, output_units VARCHAR NOT NULL, PRIMARY KEY(sql_function));"
+    ]
+  ]
+}

@@ -154,4 +154,4 @@ Report issues with the query, worker version and NOAA source URL. Do not include
 
 ## Executed notebooks
 
-See the [Tides notebook](notebooks/README.md) for a recorded observation/prediction comparison and threshold experiment.
+See the [Tides notebooks](notebooks/README.md) for recorded water-height residuals, current-measurement comparability and focused parameter experiments.

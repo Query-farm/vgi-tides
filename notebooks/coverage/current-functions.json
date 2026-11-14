@@ -1,0 +1,283 @@
+{
+  "query": "SELECT * FROM duckdb_functions() WHERE database_name='tides'",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "function_name",
+    "alias_of",
+    "function_type",
+    "description",
+    "comment",
+    "tags",
+    "return_type",
+    "parameters",
+    "parameter_types",
+    "varargs",
+    "macro_definition",
+    "has_side_effects",
+    "internal",
+    "extension_name",
+    "function_oid",
+    "examples",
+    "stability",
+    "categories"
+  ],
+  "rows": [
+    [
+      "tides",
+      "22592",
+      "main",
+      "currents",
+      null,
+      "table",
+      "Read current speed and direction from NOAA current-meter stations",
+      null,
+      {
+        "vgi.category": "api",
+        "vgi.doc_llm": "Read current speed and direction from NOAA current-meter stations. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns speed_mps with typed UTC timestamps, station_id, source_url and fetched_at. Speeds are m/s converted from NOAA cm/s. Current predictions describe flow, and slack must not be inferred from high or low tide.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.",
+        "vgi.doc_md": "## Observed Currents\n\nRead current speed and direction from NOAA current-meter stations. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns speed_mps with typed UTC timestamps, station_id, source_url and fetched_at. Speeds are m/s converted from NOAA cm/s. Current predictions describe flow, and slack must not be inferred from high or low tide.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.\n\n### Result columns\n\n| Column | Meaning |\n| --- | --- |\n| station_id | NOAA station identifier; retain as text, including leading zeroes. |\n| time | UTC timestamp of the current observation. |\n| speed_mps | Observed current speed in m/s, converted from NOAA cm/s. |\n| direction_deg | Direction toward which the current flows, degrees from true north. |\n| bin | Observed depth-bin identifier; use current_bins for deployed sensor depths. |\n| flags | Unmodified NOAA quality flags, when available. |\n| source_url | Exact NOAA request URL; identifies the data product and request parameters. |\n| fetched_at | UTC time the NOAA response was retrieved; not the observation time. |",
+        "vgi.example_queries": "[{\"description\":\"Inspect observed currents in UTC\",\"sql\":\"SELECT time, speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-02') ORDER BY time\"},{\"description\":\"Mean and peak observed current speed by sensor depth at Cape Henry (cb0102) on 1 January 2026, joining all-bin observations to the current-meter bin depths\",\"sql\":\"SELECT b.bin, b.depth_m, round(avg(c.speed_mps), 3) AS mean_speed_mps, round(max(c.speed_mps), 3) AS max_speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-01') AS c JOIN tides.main.current_bins('cb0102') AS b USING (bin) GROUP BY b.bin, b.depth_m ORDER BY b.bin\"}]",
+        "vgi.keywords": "[\"noaa\",\"currents\",\"marine\",\"time series\",\"UTC\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"station_id\",\"type\":\"VARCHAR\",\"description\":\"NOAA station identifier; retain as text, including leading zeroes.\"},{\"name\":\"time\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC timestamp of the current observation.\"},{\"name\":\"speed_mps\",\"type\":\"DOUBLE\",\"description\":\"Observed current speed in m/s, converted from NOAA cm/s.\"},{\"name\":\"direction_deg\",\"type\":\"DOUBLE\",\"description\":\"Direction toward which the current flows, degrees from true north.\"},{\"name\":\"bin\",\"type\":\"INTEGER\",\"description\":\"Observed depth-bin identifier; use current_bins for deployed sensor depths.\"},{\"name\":\"flags\",\"type\":\"VARCHAR\",\"description\":\"Unmodified NOAA quality flags, when available.\"},{\"name\":\"source_url\",\"type\":\"VARCHAR\",\"description\":\"Exact NOAA request URL; identifies the data product and request parameters.\"},{\"name\":\"fetched_at\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC time the NOAA response was retrieved; not the observation time.\"}]",
+        "vgi.title": "Observed Currents"
+      },
+      null,
+      [
+        "station_id",
+        "start_date",
+        "end_date",
+        "bin"
+      ],
+      [
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22728,
+      [
+        "SELECT time, speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-02') ORDER BY time",
+        "SELECT b.bin, b.depth_m, round(avg(c.speed_mps), 3) AS mean_speed_mps, round(max(c.speed_mps), 3) AS max_speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-01') AS c JOIN tides.main.current_bins('cb0102') AS b USING (bin) GROUP BY b.bin, b.depth_m ORDER BY b.bin"
+      ],
+      null,
+      []
+    ],
+    [
+      "tides",
+      "22592",
+      "main",
+      "current_predictions",
+      null,
+      "table",
+      "Read predicted slack, flood and ebb events or interval major-axis currents",
+      null,
+      {
+        "vgi.category": "api",
+        "vgi.doc_llm": "Read predicted slack, flood and ebb events or interval major-axis currents. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns velocity_major_mps with typed UTC timestamps, station_id, source_url and fetched_at. Speeds are m/s converted from NOAA cm/s. Current predictions describe flow, and slack must not be inferred from high or low tide. velocity_major_mps is signed along the major axis; mean flood/ebb directions are not instantaneous bearings. Default step=max_slack; bin=1.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.",
+        "vgi.doc_md": "## Tidal Current Predictions\n\nRead predicted slack, flood and ebb events or interval major-axis currents. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns velocity_major_mps with typed UTC timestamps, station_id, source_url and fetched_at. Speeds are m/s converted from NOAA cm/s. Current predictions describe flow, and slack must not be inferred from high or low tide. velocity_major_mps is signed along the major axis; mean flood/ebb directions are not instantaneous bearings. Default step=max_slack; bin=1.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.\n\n### Result columns\n\n| Column | Meaning |\n| --- | --- |\n| station_id | NOAA station identifier; retain as text, including leading zeroes. |\n| time | UTC timestamp of the current prediction. |\n| velocity_major_mps | Signed velocity along the major axis in m/s: positive flood, negative ebb; NOAA cm/s divided by 100. |\n| event_type | NOAA event type, typically flood, ebb, or slack for max_slack; NULL for interval samples. |\n| flood_direction_deg | Mean flood direction in degrees from true north; not an instantaneous bearing. |\n| ebb_direction_deg | Mean ebb direction in degrees from true north; not an instantaneous bearing. |\n| bin | Depth-bin identifier supplied by NOAA. |\n| depth_m | NOAA prediction-bin depth in metres. |\n| source_url | Exact NOAA request URL; identifies the data product and request parameters. |\n| fetched_at | UTC time the NOAA response was retrieved; not the observation time. |",
+        "vgi.example_queries": "[{\"description\":\"Inspect tidal current predictions in UTC\",\"sql\":\"SELECT time, velocity_major_mps FROM tides.main.current_predictions('ACT0956', '2026-01-01', '2026-01-02') ORDER BY time\"},{\"description\":\"Check each predicted slack, maximum flood and maximum ebb at the Chesapeake Bay entrance (cb0102, bin 4) on 1 January 2026 against the mean observed speed within 15 minutes of the event\",\"sql\":\"SELECT p.time, p.event_type, round(abs(p.velocity_major_mps), 2) AS predicted_speed_mps, round(avg(o.speed_mps), 2) AS observed_speed_mps, count(o.speed_mps) AS observations FROM tides.main.current_predictions('cb0102', '2026-01-01', '2026-01-01', bin := 4) AS p JOIN tides.main.currents('cb0102', '2026-01-01', '2026-01-01', bin := 4) AS o ON o.time BETWEEN p.time - INTERVAL 15 MINUTE AND p.time + INTERVAL 15 MINUTE GROUP BY p.time, p.event_type, p.velocity_major_mps ORDER BY p.time\"}]",
+        "vgi.keywords": "[\"noaa\",\"current_predictions\",\"marine\",\"time series\",\"UTC\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"station_id\",\"type\":\"VARCHAR\",\"description\":\"NOAA station identifier; retain as text, including leading zeroes.\"},{\"name\":\"time\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC timestamp of the current prediction.\"},{\"name\":\"velocity_major_mps\",\"type\":\"DOUBLE\",\"description\":\"Signed velocity along the major axis in m/s: positive flood, negative ebb; NOAA cm/s divided by 100.\"},{\"name\":\"event_type\",\"type\":\"VARCHAR\",\"description\":\"NOAA event type, typically flood, ebb, or slack for max_slack; NULL for interval samples.\"},{\"name\":\"flood_direction_deg\",\"type\":\"DOUBLE\",\"description\":\"Mean flood direction in degrees from true north; not an instantaneous bearing.\"},{\"name\":\"ebb_direction_deg\",\"type\":\"DOUBLE\",\"description\":\"Mean ebb direction in degrees from true north; not an instantaneous bearing.\"},{\"name\":\"bin\",\"type\":\"INTEGER\",\"description\":\"Depth-bin identifier supplied by NOAA.\"},{\"name\":\"depth_m\",\"type\":\"DOUBLE\",\"description\":\"NOAA prediction-bin depth in metres.\"},{\"name\":\"source_url\",\"type\":\"VARCHAR\",\"description\":\"Exact NOAA request URL; identifies the data product and request parameters.\"},{\"name\":\"fetched_at\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC time the NOAA response was retrieved; not the observation time.\"}]",
+        "vgi.title": "Tidal Current Predictions"
+      },
+      null,
+      [
+        "station_id",
+        "start_date",
+        "end_date",
+        "step",
+        "bin"
+      ],
+      [
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22727,
+      [
+        "SELECT time, velocity_major_mps FROM tides.main.current_predictions('ACT0956', '2026-01-01', '2026-01-02') ORDER BY time",
+        "SELECT p.time, p.event_type, round(abs(p.velocity_major_mps), 2) AS predicted_speed_mps, round(avg(o.speed_mps), 2) AS observed_speed_mps, count(o.speed_mps) AS observations FROM tides.main.current_predictions('cb0102', '2026-01-01', '2026-01-01', bin := 4) AS p JOIN tides.main.currents('cb0102', '2026-01-01', '2026-01-01', bin := 4) AS o ON o.time BETWEEN p.time - INTERVAL 15 MINUTE AND p.time + INTERVAL 15 MINUTE GROUP BY p.time, p.event_type, p.velocity_major_mps ORDER BY p.time"
+      ],
+      null,
+      []
+    ],
+    [
+      "tides",
+      "22592",
+      "main",
+      "stations",
+      null,
+      "table",
+      "Discover NOAA stations by observation or prediction capability",
+      null,
+      {
+        "vgi.category": "api",
+        "vgi.doc_llm": "List stations for one NOAA CO-OPS product family. Use station_id with the corresponding tide or current function. The named station_kind defaults to tidepredictions; use waterlevels for observations and currentpredictions/currents for current stations. Returns station names, coordinates, state and NOAA station type; currentpredictions returns one row per prediction depth bin, with bin set (pass it to current_predictions). Filter in SQL; a tide station does not necessarily provide current predictions. No API key is needed. Missing metadata is NULL; NULL arguments are rejected. Data is fetched at query execution and includes source_url and fetched_at.",
+        "vgi.doc_md": "## NOAA Tide and Current Stations\n\nList stations for one NOAA CO-OPS product family. Use station_id with the corresponding tide or current function. The named station_kind defaults to tidepredictions; use waterlevels for observations and currentpredictions/currents for current stations. Returns station names, coordinates, state and NOAA station type; currentpredictions returns one row per prediction depth bin, with bin set (pass it to current_predictions). Filter in SQL; a tide station does not necessarily provide current predictions. No API key is needed. Missing metadata is NULL; NULL arguments are rejected. Data is fetched at query execution and includes source_url and fetched_at.\n\n### Result columns\n\n| Column | Meaning |\n| --- | --- |\n| station_id | NOAA station identifier; retain as text, including leading zeroes. |\n| name | Station name supplied by NOAA. |\n| latitude | Latitude in decimal degrees, north positive. |\n| longitude | Longitude in decimal degrees, east positive. |\n| state | US state or territory abbreviation when supplied. |\n| station_kind | Requested collection: waterlevels, tidepredictions, currents, or currentpredictions. |\n| station_type | NOAA station type code, when supplied; subordinate stations have restricted prediction intervals. |\n| bin | Current-prediction depth bin (pass as current_predictions bin); currentpredictions lists one row per bin. NULL for other collections. |\n| source_url | Exact NOAA request URL; identifies the data product and request parameters. |\n| fetched_at | UTC time the NOAA response was retrieved; not the observation time. |",
+        "vgi.example_queries": "[{\"description\":\"Find tide prediction stations in New York\",\"sql\":\"SELECT station_id, name, latitude, longitude FROM tides.main.stations() WHERE state = 'NY' ORDER BY name\"}]",
+        "vgi.keywords": "[\"noaa\",\"station\",\"tides\",\"currents\",\"latitude\",\"longitude\",\"discovery\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"station_id\",\"type\":\"VARCHAR\",\"description\":\"NOAA station identifier; retain as text, including leading zeroes.\"},{\"name\":\"name\",\"type\":\"VARCHAR\",\"description\":\"Station name supplied by NOAA.\"},{\"name\":\"latitude\",\"type\":\"DOUBLE\",\"description\":\"Latitude in decimal degrees, north positive.\"},{\"name\":\"longitude\",\"type\":\"DOUBLE\",\"description\":\"Longitude in decimal degrees, east positive.\"},{\"name\":\"state\",\"type\":\"VARCHAR\",\"description\":\"US state or territory abbreviation when supplied.\"},{\"name\":\"station_kind\",\"type\":\"VARCHAR\",\"description\":\"Requested collection: waterlevels, tidepredictions, currents, or currentpredictions.\"},{\"name\":\"station_type\",\"type\":\"VARCHAR\",\"description\":\"NOAA station type code, when supplied; subordinate stations have restricted prediction intervals.\"},{\"name\":\"bin\",\"type\":\"INTEGER\",\"description\":\"Current-prediction depth bin (pass as current_predictions bin); currentpredictions lists one row per bin. NULL for other collections.\"},{\"name\":\"source_url\",\"type\":\"VARCHAR\",\"description\":\"Exact NOAA request URL; identifies the data product and request parameters.\"},{\"name\":\"fetched_at\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC time the NOAA response was retrieved; not the observation time.\"}]",
+        "vgi.title": "NOAA Tide and Current Stations"
+      },
+      null,
+      [
+        "station_kind"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22729,
+      [
+        "SELECT station_id, name, latitude, longitude FROM tides.main.stations() WHERE state = 'NY' ORDER BY name"
+      ],
+      null,
+      []
+    ],
+    [
+      "tides",
+      "22592",
+      "main",
+      "tide_predictions",
+      null,
+      "table",
+      "Read predicted high/low tides or interval water levels from NOAA",
+      null,
+      {
+        "vgi.category": "api",
+        "vgi.doc_llm": "Read predicted high/low tides or interval water levels from NOAA. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns height_m with typed UTC timestamps, station_id, source_url and fetched_at. Heights are metres relative to the named datum (default MLLW). Predictions are astronomical, not weather-adjusted water levels.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.",
+        "vgi.doc_md": "## Tide Predictions\n\nRead predicted high/low tides or interval water levels from NOAA. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns height_m with typed UTC timestamps, station_id, source_url and fetched_at. Heights are metres relative to the named datum (default MLLW). Predictions are astronomical, not weather-adjusted water levels.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.\n\n### Result columns\n\n| Column | Meaning |\n| --- | --- |\n| station_id | NOAA station identifier; retain as text, including leading zeroes. |\n| time | UTC timestamp of the predicted tide or observed water level. |\n| height_m | Water level in metres relative to the datum column; NULL for a missing value. |\n| datum | Requested vertical reference, such as MLLW; compare heights only on compatible datums. |\n| event_type | H for high tide, L for low tide; NULL for interval samples or observations. |\n| sigma_m | Standard deviation in metres for observed water levels; NULL for predictions. |\n| quality | NOAA observation quality code: p preliminary or v verified; NULL for predictions. |\n| flags | Unmodified NOAA comma-separated observation quality flags; NULL when absent. |\n| source_url | Exact NOAA request URL; identifies the data product and request parameters. |\n| fetched_at | UTC time the NOAA response was retrieved; not the observation time. |",
+        "vgi.example_queries": "[{\"description\":\"Inspect tide predictions in UTC\",\"sql\":\"SELECT time, height_m FROM tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-02') ORDER BY time\"},{\"description\":\"Compare each predicted high tide at The Battery on 1\u20133 January 2026 with the highest observed water level within an hour of it; surge_m is observed peak minus predicted height\",\"sql\":\"SELECT p.time AS predicted_high, p.height_m AS predicted_m, max(o.height_m) AS observed_peak_m, round(max(o.height_m) - p.height_m, 3) AS surge_m FROM tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-03') AS p JOIN tides.main.water_levels('8518750', '2026-01-01', '2026-01-03') AS o ON o.time BETWEEN p.time - INTERVAL 1 HOUR AND p.time + INTERVAL 1 HOUR WHERE p.event_type = 'H' GROUP BY p.time, p.height_m ORDER BY p.time\"}]",
+        "vgi.keywords": "[\"noaa\",\"tide_predictions\",\"marine\",\"time series\",\"UTC\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"station_id\",\"type\":\"VARCHAR\",\"description\":\"NOAA station identifier; retain as text, including leading zeroes.\"},{\"name\":\"time\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC timestamp of the predicted tide or observed water level.\"},{\"name\":\"height_m\",\"type\":\"DOUBLE\",\"description\":\"Water level in metres relative to the datum column; NULL for a missing value.\"},{\"name\":\"datum\",\"type\":\"VARCHAR\",\"description\":\"Requested vertical reference, such as MLLW; compare heights only on compatible datums.\"},{\"name\":\"event_type\",\"type\":\"VARCHAR\",\"description\":\"H for high tide, L for low tide; NULL for interval samples or observations.\"},{\"name\":\"sigma_m\",\"type\":\"DOUBLE\",\"description\":\"Standard deviation in metres for observed water levels; NULL for predictions.\"},{\"name\":\"quality\",\"type\":\"VARCHAR\",\"description\":\"NOAA observation quality code: p preliminary or v verified; NULL for predictions.\"},{\"name\":\"flags\",\"type\":\"VARCHAR\",\"description\":\"Unmodified NOAA comma-separated observation quality flags; NULL when absent.\"},{\"name\":\"source_url\",\"type\":\"VARCHAR\",\"description\":\"Exact NOAA request URL; identifies the data product and request parameters.\"},{\"name\":\"fetched_at\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC time the NOAA response was retrieved; not the observation time.\"}]",
+        "vgi.title": "Tide Predictions"
+      },
+      null,
+      [
+        "station_id",
+        "start_date",
+        "end_date",
+        "step",
+        "datum"
+      ],
+      [
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22730,
+      [
+        "SELECT time, height_m FROM tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-02') ORDER BY time",
+        "SELECT p.time AS predicted_high, p.height_m AS predicted_m, max(o.height_m) AS observed_peak_m, round(max(o.height_m) - p.height_m, 3) AS surge_m FROM tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-03') AS p JOIN tides.main.water_levels('8518750', '2026-01-01', '2026-01-03') AS o ON o.time BETWEEN p.time - INTERVAL 1 HOUR AND p.time + INTERVAL 1 HOUR WHERE p.event_type = 'H' GROUP BY p.time, p.height_m ORDER BY p.time"
+      ],
+      null,
+      []
+    ],
+    [
+      "tides",
+      "22592",
+      "main",
+      "water_levels",
+      null,
+      "table",
+      "Read preliminary or verified six-minute water levels with NOAA quality flags",
+      null,
+      {
+        "vgi.category": "api",
+        "vgi.doc_llm": "Read preliminary or verified six-minute water levels with NOAA quality flags. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns height_m with typed UTC timestamps, station_id, source_url and fetched_at. Heights are metres relative to the named datum (default MLLW). Predictions are astronomical, not weather-adjusted water levels.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.",
+        "vgi.doc_md": "## Observed Water Levels\n\nRead preliminary or verified six-minute water levels with NOAA quality flags. Requires station_id, start_date and end_date (inclusive UTC dates, YYYY-MM-DD). Returns height_m with typed UTC timestamps, station_id, source_url and fetched_at. Heights are metres relative to the named datum (default MLLW). Predictions are astronomical, not weather-adjusted water levels.  Requests are split into non-overlapping chunks of at most seven days; all-bin observations use one-day chunks. Missing measurements become NULL and observation flags remain unmodified. Explicit NOAA no-data responses produce no rows; other API errors fail. NULL arguments are rejected. No API key required.\n\n### Result columns\n\n| Column | Meaning |\n| --- | --- |\n| station_id | NOAA station identifier; retain as text, including leading zeroes. |\n| time | UTC timestamp of the predicted tide or observed water level. |\n| height_m | Water level in metres relative to the datum column; NULL for a missing value. |\n| datum | Requested vertical reference, such as MLLW; compare heights only on compatible datums. |\n| event_type | H for high tide, L for low tide; NULL for interval samples or observations. |\n| sigma_m | Standard deviation in metres for observed water levels; NULL for predictions. |\n| quality | NOAA observation quality code: p preliminary or v verified; NULL for predictions. |\n| flags | Unmodified NOAA comma-separated observation quality flags; NULL when absent. |\n| source_url | Exact NOAA request URL; identifies the data product and request parameters. |\n| fetched_at | UTC time the NOAA response was retrieved; not the observation time. |",
+        "vgi.example_queries": "[{\"description\":\"Inspect observed water levels in UTC\",\"sql\":\"SELECT time, height_m FROM tides.main.water_levels('8518750', '2026-01-01', '2026-01-02') ORDER BY time\"},{\"description\":\"Daily range of the storm-surge residual (observed minus predicted water level, metres) at The Battery for 1\u20137 January 2026, joining six-minute observations to six-minute tide predictions on time; days follow the session time zone (set UTC)\",\"sql\":\"SELECT CAST(o.time AS DATE) AS obs_day, round(max(o.height_m - p.height_m), 3) AS max_residual_m, round(min(o.height_m - p.height_m), 3) AS min_residual_m, count(o.height_m) AS samples FROM tides.main.water_levels('8518750', '2026-01-01', '2026-01-07') AS o JOIN tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-07', step := '6') AS p USING (time) GROUP BY obs_day ORDER BY obs_day\"}]",
+        "vgi.keywords": "[\"noaa\",\"water_levels\",\"marine\",\"time series\",\"UTC\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"station_id\",\"type\":\"VARCHAR\",\"description\":\"NOAA station identifier; retain as text, including leading zeroes.\"},{\"name\":\"time\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC timestamp of the predicted tide or observed water level.\"},{\"name\":\"height_m\",\"type\":\"DOUBLE\",\"description\":\"Water level in metres relative to the datum column; NULL for a missing value.\"},{\"name\":\"datum\",\"type\":\"VARCHAR\",\"description\":\"Requested vertical reference, such as MLLW; compare heights only on compatible datums.\"},{\"name\":\"event_type\",\"type\":\"VARCHAR\",\"description\":\"H for high tide, L for low tide; NULL for interval samples or observations.\"},{\"name\":\"sigma_m\",\"type\":\"DOUBLE\",\"description\":\"Standard deviation in metres for observed water levels; NULL for predictions.\"},{\"name\":\"quality\",\"type\":\"VARCHAR\",\"description\":\"NOAA observation quality code: p preliminary or v verified; NULL for predictions.\"},{\"name\":\"flags\",\"type\":\"VARCHAR\",\"description\":\"Unmodified NOAA comma-separated observation quality flags; NULL when absent.\"},{\"name\":\"source_url\",\"type\":\"VARCHAR\",\"description\":\"Exact NOAA request URL; identifies the data product and request parameters.\"},{\"name\":\"fetched_at\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC time the NOAA response was retrieved; not the observation time.\"}]",
+        "vgi.title": "Observed Water Levels"
+      },
+      null,
+      [
+        "station_id",
+        "start_date",
+        "end_date",
+        "datum"
+      ],
+      [
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22731,
+      [
+        "SELECT time, height_m FROM tides.main.water_levels('8518750', '2026-01-01', '2026-01-02') ORDER BY time",
+        "SELECT CAST(o.time AS DATE) AS obs_day, round(max(o.height_m - p.height_m), 3) AS max_residual_m, round(min(o.height_m - p.height_m), 3) AS min_residual_m, count(o.height_m) AS samples FROM tides.main.water_levels('8518750', '2026-01-01', '2026-01-07') AS o JOIN tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-07', step := '6') AS p USING (time) GROUP BY obs_day ORDER BY obs_day"
+      ],
+      null,
+      []
+    ],
+    [
+      "tides",
+      "22592",
+      "main",
+      "current_bins",
+      null,
+      "table",
+      "Read NOAA current-meter bin depths and deployment metadata",
+      null,
+      {
+        "vgi.category": "api",
+        "vgi.doc_llm": "Read current-meter observation bins by required station_id. Returns bin, depth_m and qc_flag, plus source_url and fetched_at. Depths are in metres and can change between deployments; this is current metadata, not a reconstruction of historical deployments. Use with currents(), not as a complete prediction-station bin listing. NOAA stations with no bins return no rows. NULL station_id is rejected. No API key required.",
+        "vgi.doc_md": "## Current Observation Depth Bins\n\nRead current-meter observation bins by required station_id. Returns bin, depth_m and qc_flag, plus source_url and fetched_at. Depths are in metres and can change between deployments; this is current metadata, not a reconstruction of historical deployments. Use with currents(), not as a complete prediction-station bin listing. NOAA stations with no bins return no rows. NULL station_id is rejected. No API key required.\n\n### Result columns\n\n| Column | Meaning |\n| --- | --- |\n| station_id | NOAA station identifier; retain as text, including leading zeroes. |\n| bin | Current-meter depth-bin identifier. |\n| depth_m | Bin depth in metres as supplied by NOAA; deployment-dependent. |\n| qc_flag | NOAA bin quality-control flag. |\n| source_url | Exact NOAA request URL; identifies the data product and request parameters. |\n| fetched_at | UTC time the NOAA response was retrieved; not the observation time. |",
+        "vgi.example_queries": "[{\"description\":\"Inspect the observation depths at Cape Henry\",\"sql\":\"SELECT bin, depth_m FROM tides.main.current_bins('cb0102') ORDER BY bin\"},{\"description\":\"Mean and peak observed current speed by sensor depth at Cape Henry (cb0102) on 1 January 2026, joining all-bin observations to the current-meter bin depths\",\"sql\":\"SELECT b.bin, b.depth_m, round(avg(c.speed_mps), 3) AS mean_speed_mps, round(max(c.speed_mps), 3) AS max_speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-01') AS c JOIN tides.main.current_bins('cb0102') AS b USING (bin) GROUP BY b.bin, b.depth_m ORDER BY b.bin\"}]",
+        "vgi.keywords": "[\"noaa\",\"current\",\"bins\",\"depth\",\"observation\",\"sensor\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"station_id\",\"type\":\"VARCHAR\",\"description\":\"NOAA station identifier; retain as text, including leading zeroes.\"},{\"name\":\"bin\",\"type\":\"INTEGER\",\"description\":\"Current-meter depth-bin identifier.\"},{\"name\":\"depth_m\",\"type\":\"DOUBLE\",\"description\":\"Bin depth in metres as supplied by NOAA; deployment-dependent.\"},{\"name\":\"qc_flag\",\"type\":\"INTEGER\",\"description\":\"NOAA bin quality-control flag.\"},{\"name\":\"source_url\",\"type\":\"VARCHAR\",\"description\":\"Exact NOAA request URL; identifies the data product and request parameters.\"},{\"name\":\"fetched_at\",\"type\":\"TIMESTAMPTZ\",\"description\":\"UTC time the NOAA response was retrieved; not the observation time.\"}]",
+        "vgi.title": "Current Observation Depth Bins"
+      },
+      null,
+      [
+        "station_id"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22726,
+      [
+        "SELECT bin, depth_m FROM tides.main.current_bins('cb0102') ORDER BY bin",
+        "SELECT b.bin, b.depth_m, round(avg(c.speed_mps), 3) AS mean_speed_mps, round(max(c.speed_mps), 3) AS max_speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-01') AS c JOIN tides.main.current_bins('cb0102') AS b USING (bin) GROUP BY b.bin, b.depth_m ORDER BY b.bin"
+      ],
+      null,
+      []
+    ]
+  ]
+}

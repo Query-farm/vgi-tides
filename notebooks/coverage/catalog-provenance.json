@@ -1,0 +1,12 @@
+{
+  "repository": "Query-farm/vgi-tides",
+  "release_tag": "v0.1.0",
+  "release_revision": "ca8e95e4131b1bc8ff001b405312e255541692e0",
+  "current_public_revision": "fb22d6626686e621b85a30faf2305f3e225da601",
+  "engine": "Haybarn 2.0.0rc11 / VGI e75482339d",
+  "released_launch": "github-auto://Query-farm/vgi-tides@v0.1.0",
+  "current_catalog_launch": "Read-only original checkout src/worker.ts with its already installed Bun dependencies; no source build or dependency change. This probe establishes current catalog evidence only, not the reader launch.",
+  "comparison": "Both actual runtime catalogs expose six functions plus the products table and no views: seven logical names. Native input signatures match. Current main adds stations.bin, richer HTTP error detail and metadata examples. Notebook SQL executes release v0.1.0 and explicitly uses the recorded raw metadata for its prediction-bin choice. Current-interface coverage is separate from exact runtime and does not claim execution of the new column.",
+  "data_isolation": "Empty disposable SQL-secret directory, persistence disabled, no secret. Published native worker reads exact original recorded NOAA HTTP bytes on loopback by default; explicit live clears inherited base URLs and uses official NOAA directly with no fallback. No API key/account write.",
+  "captured_at": "2026-11-14T23:42:47.740162+00:00"
+}

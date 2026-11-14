@@ -1,0 +1,47 @@
+{
+  "query": "SELECT * FROM duckdb_databases() WHERE database_name='tides'",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "path",
+    "comment",
+    "tags",
+    "internal",
+    "type",
+    "readonly",
+    "encrypted",
+    "cipher",
+    "options"
+  ],
+  "rows": [
+    [
+      "tides",
+      22592,
+      null,
+      "# NOAA Tides\n\nNOAA CO-OPS tide and current stations, predictions and observations in SQL. Table functions return typed Arrow columns with UTC timestamps, source URLs and retrieval times. No API key is needed. Missing measurements become NULL; invalid arguments and unexpected upstream responses fail explicitly. Data is retrieved when a query executes. Use SQL to filter, aggregate and join stations to measurements. Water levels are metres relative to the returned datum, default MLLW. Current velocities are converted from cm/s to m/s. Time-series dates are inclusive UTC days, at most 366 days; requests are automatically chunked. Tide predictions are astronomical and current slack is a separate product.\n\n## Data access\n\nUse the main schema to discover stations and retrieve observations. Each response preserves its source URL and UTC retrieval time. Missing sensor values remain NULL.",
+      {
+        "vgi.agent_test_tasks": "[{\"name\":\"reference_units\",\"prompt\":\"List sql_function and output_units for products measured in m/s, ordered by sql_function.\"},{\"name\":\"stations_query\",\"prompt\":\"Using tides.main.stations, list the first five station IDs and names ordered by station ID.\"},{\"name\":\"tide_predictions_query\",\"prompt\":\"Using tides.main.tide_predictions, show time and height_m for station 8518750 for January 1\u20132, 2026, ordered by time.\"},{\"name\":\"water_levels_query\",\"prompt\":\"Using tides.main.water_levels, show time and height_m for station 8518750 for January 1\u20132, 2026, ordered by time.\"},{\"name\":\"current_predictions_query\",\"prompt\":\"Using tides.main.current_predictions, show time and velocity_major_mps for station ACT0956 for January 1\u20132, 2026, ordered by time.\"},{\"name\":\"currents_query\",\"prompt\":\"Using tides.main.currents, show time and speed_mps for station cb0102 for January 1\u20132, 2026, ordered by time.\"},{\"name\":\"current_bins_query\",\"prompt\":\"Using tides.main.current_bins, list bin and depth_m for current station cb0102 ordered by bin.\"}]",
+        "vgi.author": "Query.Farm",
+        "vgi.copyright": "Copyright 2026 Query.Farm LLC",
+        "vgi.doc_llm": "NOAA CO-OPS tide and current stations, predictions and observations in SQL. Table functions return typed Arrow columns with UTC timestamps, source URLs and retrieval times. No API key is needed. Missing measurements become NULL; invalid arguments and unexpected upstream responses fail explicitly. Data is retrieved when a query executes. Use SQL to filter, aggregate and join stations to measurements. Water levels are metres relative to the returned datum, default MLLW. Current velocities are converted from cm/s to m/s. Time-series dates are inclusive UTC days, at most 366 days; requests are automatically chunked. Tide predictions are astronomical and current slack is a separate product.",
+        "vgi.doc_md": "# NOAA Tides\n\nNOAA CO-OPS tide and current stations, predictions and observations in SQL. Table functions return typed Arrow columns with UTC timestamps, source URLs and retrieval times. No API key is needed. Missing measurements become NULL; invalid arguments and unexpected upstream responses fail explicitly. Data is retrieved when a query executes. Use SQL to filter, aggregate and join stations to measurements. Water levels are metres relative to the returned datum, default MLLW. Current velocities are converted from cm/s to m/s. Time-series dates are inclusive UTC days, at most 366 days; requests are automatically chunked. Tide predictions are astronomical and current slack is a separate product.\n\n## Data access\n\nUse the main schema to discover stations and retrieve observations. Each response preserves its source URL and UTC retrieval time. Missing sensor values remain NULL.",
+        "vgi.icon_url": "https://query.farm/media-kit/products/vgi/vgi-logo.png",
+        "vgi.keywords": "[\"noaa\", \"tides\", \"marine\", \"sql\", \"observations\", \"stations\"]",
+        "vgi.license": "0BSD",
+        "vgi.source_url": "https://github.com/Query-farm/vgi-tides",
+        "vgi.subtitle": "NOAA CO-OPS tide and current stations, predictions and observations for marine analysis.",
+        "vgi.support_contact": "https://github.com/Query-farm/vgi-tides/issues",
+        "vgi.support_policy_url": "https://github.com/Query-farm/vgi-tides#support",
+        "vgi.title": "NOAA Tides"
+      },
+      false,
+      "vgi",
+      false,
+      false,
+      null,
+      {
+        "location": "github-auto://Query-farm/vgi-tides@v0.1.0"
+      }
+    ]
+  ]
+}
