@@ -1,0 +1,37 @@
+{
+  "predictions": {
+    "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=8518750&begin_date=20261001&end_date=20261001&units=metric&time_zone=gmt&format=json&application=QueryFarm_vgi_tides&datum=MLLW&interval=6",
+    "parameters": {
+      "product": "predictions",
+      "station": "8518750",
+      "begin_date": "20261001",
+      "end_date": "20261001",
+      "units": "metric",
+      "time_zone": "gmt",
+      "format": "json",
+      "application": "QueryFarm_vgi_tides",
+      "datum": "MLLW",
+      "interval": "6"
+    },
+    "captured_utc": "2026-11-14T10:30:52.308437+00:00",
+    "sha256": "d2ec743e35e73610720f4e9a3d3c5aa278667bc6068dc14930520ab41af89623",
+    "http_status": 200
+  },
+  "water_level": {
+    "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_level&station=8518750&begin_date=20261001&end_date=20261001&units=metric&time_zone=gmt&format=json&application=QueryFarm_vgi_tides&datum=MLLW",
+    "parameters": {
+      "product": "water_level",
+      "station": "8518750",
+      "begin_date": "20261001",
+      "end_date": "20261001",
+      "units": "metric",
+      "time_zone": "gmt",
+      "format": "json",
+      "application": "QueryFarm_vgi_tides",
+      "datum": "MLLW"
+    },
+    "captured_utc": "2026-11-14T10:30:52.437873+00:00",
+    "sha256": "cff58e5a165c7edf08d244d8fdae1867cab7f9f03ce5f157508bf6b5d113abef",
+    "http_status": 200
+  }
+}

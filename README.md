@@ -140,3 +140,7 @@ Report issues with the query, worker version and NOAA source URL. Do not include
 ## License
 
 [BSD Zero Clause](LICENSE), inherited from the Query Farm starter.
+
+## Executed notebooks
+
+See the [Tides notebook](notebooks/README.md) for a recorded observation/prediction comparison and threshold experiment.
