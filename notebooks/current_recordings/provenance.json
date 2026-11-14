@@ -1,0 +1,87 @@
+{
+  "description": "Unchanged official NOAA HTTP response bytes. Observation stations and current bins are capture-time metadata, not historical deployment reconstruction. Original request units and UTC bounds are retained. No synthetic values or extrapolation.",
+  "captures": [
+    {
+      "file": "stations-currents.json",
+      "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=currents",
+      "captured_utc": "2026-11-14T23:25:51.341545+00:00",
+      "http_status": 200,
+      "sha256": "26e394f519420807e3784877ef5b2b309231e8b194ce58a646ebdd5c2ee54cc9",
+      "bytes": 102298
+    },
+    {
+      "file": "stations-currentpredictions.json",
+      "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=currentpredictions",
+      "captured_utc": "2026-11-14T23:25:51.862717+00:00",
+      "http_status": 200,
+      "sha256": "39db4ef057c07b1af834dd66456808d327960c6a6d965457aed4500efc637d4d",
+      "bytes": 3770411
+    },
+    {
+      "file": "bins-cp0101.json",
+      "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/cp0101/bins.json?units=metric",
+      "captured_utc": "2026-11-14T23:28:23.001873+00:00",
+      "http_status": 200,
+      "sha256": "aab87873715f7cd309c5922447b64005cb55c2e7f9e099b6a81f648a91481ab8",
+      "bytes": 4518
+    },
+    {
+      "file": "currents-cp0101-bin1.json",
+      "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=currents&station=cp0101&begin_date=20261113&end_date=20261113&units=metric&time_zone=gmt&format=json&application=QueryFarm_vgi_tides&bin=1",
+      "parameters": {
+        "product": "currents",
+        "station": "cp0101",
+        "begin_date": "20261113",
+        "end_date": "20261113",
+        "units": "metric",
+        "time_zone": "gmt",
+        "format": "json",
+        "application": "QueryFarm_vgi_tides",
+        "bin": "1"
+      },
+      "captured_utc": "2026-11-14T23:28:36.327864+00:00",
+      "http_status": 200,
+      "sha256": "202a0ba7e06cfd4c3275e0b6f580edc335b7144fadebc6acc79af090ef2616eb",
+      "bytes": 13850
+    },
+    {
+      "file": "currents-cp0101-bin20.json",
+      "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=currents&station=cp0101&begin_date=20261113&end_date=20261113&units=metric&time_zone=gmt&format=json&application=QueryFarm_vgi_tides&bin=20",
+      "parameters": {
+        "product": "currents",
+        "station": "cp0101",
+        "begin_date": "20261113",
+        "end_date": "20261113",
+        "units": "metric",
+        "time_zone": "gmt",
+        "format": "json",
+        "application": "QueryFarm_vgi_tides",
+        "bin": "20"
+      },
+      "captured_utc": "2026-11-14T23:28:36.340604+00:00",
+      "http_status": 200,
+      "sha256": "2ecb9fa083a13f179e86a50d7ebcaea8418004123c18bd3370cc379cdc9c13a7",
+      "bytes": 14126
+    },
+    {
+      "file": "predictions-cp0101-bin20.json",
+      "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=currents_predictions&station=cp0101&begin_date=20261113&end_date=20261113&units=metric&time_zone=gmt&format=json&application=QueryFarm_vgi_tides&bin=20&interval=6",
+      "parameters": {
+        "product": "currents_predictions",
+        "station": "cp0101",
+        "begin_date": "20261113",
+        "end_date": "20261113",
+        "units": "metric",
+        "time_zone": "gmt",
+        "format": "json",
+        "application": "QueryFarm_vgi_tides",
+        "bin": "20",
+        "interval": "6"
+      },
+      "captured_utc": "2026-11-14T23:28:36.357994+00:00",
+      "http_status": 200,
+      "sha256": "65563c5541b2bc394ae9705b3f67a725d9a4bff459de6549ecb375464be80c4e",
+      "bytes": 26439
+    }
+  ]
+}
