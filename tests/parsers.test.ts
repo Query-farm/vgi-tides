@@ -45,4 +45,20 @@ test("only explicit no-data responses become empty; malformed and upstream error
   expect(() => noaaBody({ error: { message: "Invalid station" } })).toThrow("Invalid station");
   expect(() => parseStations({ unexpected: [] }, "waterlevels")).toThrow("stations array");
   expect(parseStations({ stations: [] }, "waterlevels")).toEqual([]);
+  // Current-prediction stations are listed once per depth bin; the bin keeps those rows distinct.
+  const perBin = parseStations(
+    {
+      stations: [4, 9].map((currbin) => ({
+        id: "cb0102",
+        name: "Cape Henry",
+        lat: 36.96,
+        lng: -76.01,
+        type: "H",
+        currbin,
+      })),
+    },
+    "currentpredictions",
+  );
+  expect(perBin.map((r) => r.bin)).toEqual([4, 9]);
+  expect(parseStations({ stations: [{ id: "8518750" }] }, "waterlevels")[0]?.bin).toBeNull();
 });

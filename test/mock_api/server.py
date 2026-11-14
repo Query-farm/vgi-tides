@@ -30,6 +30,9 @@ class Handler(BaseHTTPRequestHandler):
     def route(self, path, q):
         if path == "/stations.json":
             assert q.get("type") in ["waterlevels","tidepredictions","currents","currentpredictions"], "missing station type"
+            if q["type"]=="currentpredictions":
+                # NOAA lists a current-prediction station once per depth bin (currbin).
+                return self.send({"stations":[{"id":"cb0102","name":"Cape Henry","lat":36.96,"lng":-76.01,"type":"H","currbin":b} for b in (4,9)]})
             return self.send({"stations":[{"id":"8518750","name":"The Battery","lat":40.7,"lng":-74.01,"state":"NY","type":"R"},{"id":"9414290","name":"San Francisco","lat":37.8,"lng":-122.46,"state":"CA","type":"R"}]})
         if path.endswith("/bins.json"):
             assert q.get("units") == "metric"
@@ -41,6 +44,8 @@ class Handler(BaseHTTPRequestHandler):
         if q["station"]=="0000000": return self.send({"error":{"message":"No data was found. This product may not be offered at this station."}})
         if q["station"]=="8888888": return self.send({"unexpected":[]})
         if q["station"]=="HTTP001": return self.send({},404)
+        if q["product"]=="currents_predictions" and q.get("bin")=="99":
+            return self.send({"error":{"message":f"Available bin number of {q['station']}: 1, 2, "}},400)
         start=datetime.strptime(q["begin_date"],"%Y%m%d")
         end=datetime.strptime(q["end_date"],"%Y%m%d")
         assert 0 <= (end-start).days <= 6, "request exceeds seven inclusive days"

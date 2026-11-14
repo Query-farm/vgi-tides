@@ -103,6 +103,20 @@ export const AGENT_TEST_TASKS = [
     name: "current_bins_query",
     prompt: "Using tides.main.current_bins, list bin and depth_m for current station cb0102 ordered by bin.",
   },
+  {
+    name: "composed_battery_peak_residual",
+    prompt:
+      "At The Battery (NOAA station 8518750), from 2026-01-08 through 2026-01-14 (inclusive UTC days), at which six-minute time did the observed water level " +
+      "exceed the six-minute tide prediction by the most, and by how much (observed minus predicted, metres, default MLLW datum)? " +
+      "Save the answer with CREATE TEMP TABLE battery_peak_residual AS SELECT ... with exactly one row and columns time (TIMESTAMPTZ) and residual_m (DOUBLE).",
+  },
+  {
+    name: "composed_cape_henry_slowest_depth",
+    prompt:
+      "At NOAA current-meter station cb0102 (Cape Henry), averaging every observed current speed from 2026-01-02 through 2026-01-03 (inclusive UTC days) per depth bin, " +
+      "which sensor depth had the lowest mean speed? Report the depth in metres from the station's bin metadata. " +
+      "Save the answer with CREATE TEMP TABLE slowest_depth AS SELECT ... with exactly one row and columns depth_m (DOUBLE) and mean_speed_mps (DOUBLE).",
+  },
 ];
 export const CATALOG_TAGS: Record<string, string> = {
   ...{

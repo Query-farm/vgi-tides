@@ -1,4 +1,11 @@
 import { defineTableFunction, int64, utf8, type VgiFunction } from "@query-farm/vgi";
+import {
+  DAILY_SURGE_RESIDUAL,
+  type Example,
+  HIGH_TIDE_VS_OBSERVED,
+  PREDICTED_EVENTS_VS_OBSERVED,
+  SPEED_BY_DEPTH,
+} from "./composed.ts";
 import { endpoint, getJson, UpstreamError } from "./http.ts";
 import {
   type Column,
@@ -100,6 +107,11 @@ export const STATION_COLUMNS: Column[] = [
     "VARCHAR",
     "NOAA station type code, when supplied; subordinate stations have restricted prediction intervals.",
   ],
+  [
+    "bin",
+    "INTEGER",
+    "Current-prediction depth bin (pass as current_predictions bin); currentpredictions lists one row per bin. NULL for other collections.",
+  ],
   ...PROVENANCE,
 ];
 
@@ -113,6 +125,8 @@ export function parseStations(body: unknown, kind: string): Row[] {
     state: textOrNull(s.state),
     station_kind: kind,
     station_type: textOrNull(s.type),
+    // Current-prediction stations repeat once per depth bin; without the bin the rows are indistinguishable.
+    bin: numberOrNull(s.currbin),
   }));
 }
 
@@ -139,7 +153,7 @@ const stations = oneShot<{ station_kind: string }>({
   docs:
     "List stations for one NOAA CO-OPS product family. Use station_id with the corresponding tide or current function. " +
     "The named station_kind defaults to tidepredictions; use waterlevels for observations and currentpredictions/currents for current stations. " +
-    "Returns station names, coordinates, state and NOAA station type. Filter in SQL; a tide station does not necessarily provide current predictions. " +
+    "Returns station names, coordinates, state and NOAA station type; currentpredictions returns one row per prediction depth bin, with bin set (pass it to current_predictions). Filter in SQL; a tide station does not necessarily provide current predictions. " +
     "No API key is needed. Missing metadata is NULL; NULL arguments are rejected. Data is fetched at query execution and includes source_url and fetched_at.",
   examples: [
     {
@@ -241,7 +255,13 @@ export function parseSeries(body: unknown, product: Product, args: SeriesArgs): 
   });
 }
 
-function series(product: Product, name: string, title: string, description: string): VgiFunction {
+function series(
+  product: Product,
+  name: string,
+  title: string,
+  description: string,
+  composed: Example[] = [],
+): VgiFunction {
   const water = product === "predictions" || product === "water_level";
   const predicted = product === "predictions" || product === "currents_predictions";
   const steps = water
@@ -302,6 +322,7 @@ function series(product: Product, name: string, title: string, description: stri
           sql: `SELECT time, ${measure} FROM tides.main.${name}('${sample}', '2026-01-01', '2026-01-02') ORDER BY time`,
           description: `Inspect ${title.toLowerCase()} in UTC`,
         },
+        ...composed,
       ],
     }),
     args,
@@ -396,6 +417,7 @@ const bins = oneShot<{ station_id: string }>({
       sql: "SELECT bin, depth_m FROM tides.main.current_bins('cb0102') ORDER BY bin",
       description: "Inspect the observation depths at Cape Henry",
     },
+    SPEED_BY_DEPTH,
   ],
 });
 
@@ -406,24 +428,28 @@ export const FUNCTIONS: VgiFunction[] = [
     "tide_predictions",
     "Tide Predictions",
     "Read predicted high/low tides or interval water levels from NOAA",
+    [HIGH_TIDE_VS_OBSERVED],
   ),
   series(
     "water_level",
     "water_levels",
     "Observed Water Levels",
     "Read preliminary or verified six-minute water levels with NOAA quality flags",
+    [DAILY_SURGE_RESIDUAL],
   ),
   series(
     "currents_predictions",
     "current_predictions",
     "Tidal Current Predictions",
     "Read predicted slack, flood and ebb events or interval major-axis currents",
+    [PREDICTED_EVENTS_VS_OBSERVED],
   ),
   series(
     "currents",
     "currents",
     "Observed Currents",
     "Read current speed and direction from NOAA current-meter stations",
+    [SPEED_BY_DEPTH],
   ),
   bins,
 ];

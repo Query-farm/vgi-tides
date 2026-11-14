@@ -45,6 +45,17 @@ ORDER BY time;
 SELECT station_id, name, latitude, longitude
 FROM tides.main.stations(station_kind := 'waterlevels')
 WHERE state = 'NY' ORDER BY name;
+
+-- Storm-surge residual: observed water level minus the six-minute tide
+-- prediction, per day at The Battery.
+SELECT CAST(o.time AS DATE) AS obs_day,
+       round(max(o.height_m - p.height_m), 3) AS max_residual_m,
+       round(min(o.height_m - p.height_m), 3) AS min_residual_m,
+       count(o.height_m) AS samples
+FROM tides.main.water_levels('8518750', '2026-01-01', '2026-01-07') AS o
+JOIN tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-07', step := '6') AS p
+  USING (time)
+GROUP BY obs_day ORDER BY obs_day;
 ```
 
 Run [demo.sql](demo.sql) from the project directory after `make build`; it uses the local `bin/` launcher.
@@ -66,7 +77,7 @@ All functions are in `tides.main`. Required arguments are positional; optional a
 
 | Function / table | Parameters and behavior |
 | --- | --- |
-| `stations(station_kind := 'tidepredictions')` | Collections: `tidepredictions`, `waterlevels`, `currentpredictions`, `currents`. Coordinates, names and station type. |
+| `stations(station_kind := 'tidepredictions')` | Collections: `tidepredictions`, `waterlevels`, `currentpredictions`, `currents`. Coordinates, names and station type. `currentpredictions` lists a station once per prediction depth `bin` (pass it to `current_predictions`); `bin` is NULL for other collections. |
 | `tide_predictions(station_id, start_date, end_date, datum := 'MLLW', step := 'hilo')` | Predicted heights in metres. `step`: `hilo`, `h`, or `1`, `5`, `6`, `10`, `15`, `30`, `60` minutes. H/L event labels exist only for high/low predictions. |
 | `water_levels(station_id, start_date, end_date, datum := 'MLLW')` | Six-minute observed heights in metres, sigma, NOAA quality code and original flags. |
 | `current_predictions(station_id, start_date, end_date, bin := 1, step := 'max_slack')` | Signed major-axis velocity in m/s, event type, mean flood/ebb directions and bin depth. `step`: `max_slack`, `h`, or `1`, `6`, `10`, `30`, `60` minutes. |
@@ -76,7 +87,7 @@ All functions are in `tides.main`. Required arguments are positional; optional a
 
 Dates are **inclusive UTC calendar days** in `YYYY-MM-DD` format. A query may span at most 366 days. The worker splits requests into non-overlapping chunks of at most seven days; all-bin current observations use one-day chunks. Rows stream by request, with no dependence on process-local state between batches.
 
-Subordinate tide stations require `step := 'hilo'` and `datum := 'MLLW'`; subordinate current stations require `step := 'max_slack'`. Other supported datums are `MHHW`, `MHW`, `MTL`, `MSL`, `MLW`, `NAVD`, `STND`, `IGLD`, `LWD`, and `CRD`, subject to station availability. NOAA errors for unsupported station/product combinations are preserved.
+Subordinate tide stations require `step := 'hilo'` and `datum := 'MLLW'`; subordinate current stations require `step := 'max_slack'`. Other supported datums are `MHHW`, `MHW`, `MTL`, `MSL`, `MLW`, `NAVD`, `STND`, `IGLD`, `LWD`, and `CRD`, subject to station availability. NOAA errors for unsupported station/product combinations are preserved, including the message NOAA sends with an HTTP 400 (for example, the available current-prediction bins).
 
 `height_m` is relative to the returned **datum**. Astronomical tide predictions do not include weather-driven water-level changes. Currents are a separate product: high/low water does not establish slack current. `velocity_major_mps` is signed (flood positive, ebb negative); mean flood/ebb directions are not instantaneous bearings. Observation-bin depths can change with deployments; the metadata endpoint describes current configuration, not historical deployment depth.
 

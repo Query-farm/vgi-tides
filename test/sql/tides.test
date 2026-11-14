@@ -136,3 +136,52 @@ SELECT sql_function, output_units FROM tides.main.products WHERE output_units = 
 ----
 current_predictions	m/s
 currents	m/s
+
+# composed: daily surge residual (water_levels x tide_predictions)
+query TRRI
+SELECT CAST(o.time AS DATE) AS obs_day, round(max(o.height_m - p.height_m), 3) AS max_residual_m, round(min(o.height_m - p.height_m), 3) AS min_residual_m, count(o.height_m) AS samples FROM tides.main.water_levels('8518750', '2026-01-01', '2026-01-07') AS o JOIN tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-07', step := '6') AS p USING (time) GROUP BY obs_day ORDER BY obs_day;
+----
+2026-01-01	0.0	-1.5	3
+2026-01-02	0.0	-1.5	3
+2026-01-03	0.0	-1.5	3
+2026-01-04	0.0	-1.5	3
+2026-01-05	0.0	-1.5	3
+2026-01-06	0.0	-1.5	3
+2026-01-07	0.0	-1.5	3
+
+# composed: predicted high tides vs observed peak
+query TRRR
+SELECT p.time AS predicted_high, p.height_m AS predicted_m, max(o.height_m) AS observed_peak_m, round(max(o.height_m) - p.height_m, 3) AS surge_m FROM tides.main.tide_predictions('8518750', '2026-01-01', '2026-01-03') AS p JOIN tides.main.water_levels('8518750', '2026-01-01', '2026-01-03') AS o ON o.time BETWEEN p.time - INTERVAL 1 HOUR AND p.time + INTERVAL 1 HOUR WHERE p.event_type = 'H' GROUP BY p.time, p.height_m ORDER BY p.time;
+----
+2026-01-01 00:00:00+00	1.2	1.2	0.0
+2026-01-01 12:00:00+00	1.5	NULL	NULL
+2026-01-02 00:00:00+00	1.2	1.2	0.0
+2026-01-02 12:00:00+00	1.5	NULL	NULL
+2026-01-03 00:00:00+00	1.2	1.2	0.0
+2026-01-03 12:00:00+00	1.5	NULL	NULL
+
+# composed: speed by sensor depth (currents x current_bins)
+query IRRR
+SELECT b.bin, b.depth_m, round(avg(c.speed_mps), 3) AS mean_speed_mps, round(max(c.speed_mps), 3) AS max_speed_mps FROM tides.main.currents('cb0102', '2026-01-01', '2026-01-01') AS c JOIN tides.main.current_bins('cb0102') AS b USING (bin) GROUP BY b.bin, b.depth_m ORDER BY b.bin;
+----
+1	1.8	0.25	0.25
+2	3.6	0.5	0.5
+
+# composed: predicted current events vs observed speed
+query TTRRI
+SELECT p.time, p.event_type, round(abs(p.velocity_major_mps), 2) AS predicted_speed_mps, round(avg(o.speed_mps), 2) AS observed_speed_mps, count(o.speed_mps) AS observations FROM tides.main.current_predictions('cb0102', '2026-01-01', '2026-01-01', bin := 4) AS p JOIN tides.main.currents('cb0102', '2026-01-01', '2026-01-01', bin := 4) AS o ON o.time BETWEEN p.time - INTERVAL 15 MINUTE AND p.time + INTERVAL 15 MINUTE GROUP BY p.time, p.event_type, p.velocity_major_mps ORDER BY p.time;
+----
+2026-01-01 00:00:00+00	flood	0.25	1.0	1
+
+# current-prediction stations are listed once per depth bin
+query TI
+SELECT station_id, bin FROM tides.main.stations(station_kind := 'currentpredictions') ORDER BY bin;
+----
+cb0102	4
+cb0102	9
+
+# a NOAA 400 keeps its JSON error message
+statement error
+SELECT count(*) FROM tides.main.current_predictions('cb0102', '2026-01-01', '2026-01-01', bin := 99);
+----
+Available bin number of cb0102: 1, 2

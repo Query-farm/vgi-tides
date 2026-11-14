@@ -55,6 +55,22 @@ async function boundedText(response: Response, maxBytes: number): Promise<string
   }
 }
 
+/**
+ * NOAA reports invalid requests (for example an unavailable current-prediction
+ * bin) as HTTP 400 with a JSON `{"error": {"message": ...}}` body; keep that
+ * message so the SQL error says what to change. Bounded and best-effort.
+ */
+async function errorDetail(response: Response): Promise<string> {
+  try {
+    const parsed = JSON.parse(await boundedText(response, 64 * 1024)) as { error?: unknown };
+    const error = parsed?.error;
+    const message = typeof error === "string" ? error : (error as { message?: unknown } | undefined)?.message;
+    return typeof message === "string" ? message.trim().replace(/,\s*$/, "").slice(0, 500) : "";
+  } catch {
+    return "";
+  }
+}
+
 export async function getText(url: URL | string, options: HttpOptions = {}): Promise<string> {
   const fetcher = options.fetcher ?? fetch;
   const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
@@ -70,10 +86,13 @@ export async function getText(url: URL | string, options: HttpOptions = {}): Pro
         },
       });
       if (response.ok) return await boundedText(response, maxBytes);
-      await response.body?.cancel();
       if ((response.status !== 429 && response.status < 500) || attempt === 3) {
-        throw new UpstreamError(`NOAA request failed with HTTP ${response.status} (${new URL(url).pathname})`);
+        const detail = await errorDetail(response);
+        throw new UpstreamError(
+          `NOAA request failed with HTTP ${response.status} (${new URL(url).pathname})${detail ? `: ${detail}` : ""}`,
+        );
       }
+      await response.body?.cancel();
       delay = retryDelay(response.headers.get("Retry-After"), attempt);
       // Do not retry earlier than NOAA requests; fail when that would exceed our wait budget.
       if (delay > 30_000) throw new UpstreamError(`NOAA HTTP ${response.status}: retry after ${delay / 1000} seconds`);

@@ -35,6 +35,16 @@ test("404 fails immediately with status; excessive Retry-After fails without ear
   await expect(getText("https://example.invalid/data", { fetcher: limited })).rejects.toThrow("retry after 60 seconds");
 });
 
+test("a 400 keeps NOAA's JSON error message; non-JSON bodies keep the bare status", async () => {
+  const bin = (async () =>
+    new Response('{"error": {"message":"Available bin number of cb0102: 4, 9, 14, "}}', { status: 400 })) as Fetcher;
+  await expect(getText("https://example.invalid/data", { fetcher: bin })).rejects.toThrow(
+    /HTTP 400 \(\/data\): Available bin number of cb0102: 4, 9, 14$/,
+  );
+  const html = (async () => new Response("<html>bad</html>", { status: 400 })) as Fetcher;
+  await expect(getText("https://example.invalid/data", { fetcher: html })).rejects.toThrow(/HTTP 400 \(\/data\)$/);
+});
+
 test("network failures are bounded to four attempts and responses are size limited", async () => {
   let calls = 0;
   const fetcher = (async () => {
