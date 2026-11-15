@@ -81,7 +81,7 @@ export async function getText(url: URL | string, options: HttpOptions = {}): Pro
       const response = await fetcher(url, {
         signal: AbortSignal.timeout(options.timeoutMs ?? 20_000),
         headers: {
-          "User-Agent": "QueryFarm-vgi-marine/0.1.1",
+          "User-Agent": "QueryFarm-vgi-marine/0.1.2",
           Accept: "application/json, text/plain, application/xml",
         },
       });

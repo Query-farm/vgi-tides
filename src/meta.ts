@@ -13,7 +13,7 @@
 import { field, type VgiDataType, type VgiField } from "@query-farm/vgi";
 
 export const CATALOG_NAME = "tides";
-export const VERSION = "0.1.1";
+export const VERSION = "0.1.2";
 
 export const SOURCE_URL = "https://github.com/Query-farm/vgi-tides";
 
@@ -68,7 +68,14 @@ export const CATALOG_DOC_LLM =
 export const CATALOG_DOC_MD =
   "# NOAA Tides\n\n" +
   CATALOG_DOC_LLM +
-  "\n\n## Data access\n\nUse the main schema to discover stations and retrieve observations. Each response preserves its source URL and UTC retrieval time. Missing sensor values remain NULL.";
+  "\n\n## Data access\n\nUse the main schema to discover stations and retrieve observations. Each response preserves its source URL and UTC retrieval time. Missing sensor values remain NULL.\n\n## Sources and references\n\n" +
+  "- [NOAA Tides & Currents (CO-OPS)](https://tidesandcurrents.noaa.gov/): the upstream station network, predictions and observations.\n" +
+  "- [CO-OPS Data Retrieval API](https://api.tidesandcurrents.noaa.gov/api/prod/): the data getter used for predictions, water levels and currents.\n" +
+  "- [CO-OPS Metadata API](https://api.tidesandcurrents.noaa.gov/mdapi/prod/): the station directory used by stations().\n" +
+  "- [Tidal datums](https://tidesandcurrents.noaa.gov/datum_options.html): what MLLW, MSL, NAVD88 and the other datum choices mean.";
+/** Short plain-text schema COMMENT; SCHEMA_DOC_MD carries the longer narrative. */
+export const SCHEMA_COMMENT =
+  "NOAA CO-OPS tide and current station directory, tide predictions, observed water levels, tidal currents and a product unit reference.";
 export const SCHEMA_DOC_LLM = `The main schema exposes tides station discovery, measurements and reference information. ${CATALOG_DOC_LLM}`;
 export const SCHEMA_DOC_MD =
   "## Marine functions\n\n" +
