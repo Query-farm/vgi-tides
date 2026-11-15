@@ -13,7 +13,7 @@
 import { field, type VgiDataType, type VgiField } from "@query-farm/vgi";
 
 export const CATALOG_NAME = "tides";
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.1";
 
 export const SOURCE_URL = "https://github.com/Query-farm/vgi-tides";
 
@@ -58,6 +58,10 @@ export function objectTags(opts: {
 export function column(name: string, type: VgiDataType, comment: string, nullable = true): VgiField {
   return field(name, type, nullable, new Map([["comment", comment]]));
 }
+
+/** One plain-text sentence: the catalog COMMENT directories show as the worker"s description. */
+export const CATALOG_COMMENT =
+  "NOAA CO-OPS tide and current stations, tide predictions, observed water levels, and predicted and observed tidal currents as SQL tables, with heights in metres on a chosen datum and speeds in m/s. No API key needed.";
 
 export const CATALOG_DOC_LLM =
   "NOAA CO-OPS tide and current stations, predictions and observations in SQL. Table functions return typed Arrow columns with UTC timestamps, source URLs and retrieval times. No API key is needed. Missing measurements become NULL; invalid arguments and unexpected upstream responses fail explicitly. Data is retrieved when a query executes. Use SQL to filter, aggregate and join stations to measurements. Water levels are metres relative to the returned datum, default MLLW. Current velocities are converted from cm/s to m/s. Time-series dates are inclusive UTC days, at most 366 days; requests are automatically chunked. Tide predictions are astronomical and current slack is a separate product.";
