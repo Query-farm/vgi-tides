@@ -62,7 +62,7 @@ Run [demo.sql](demo.sql) from the project directory after `make build`; it uses 
 
 ## Release binaries
 
-[Release v0.1.2](https://github.com/Query-farm/vgi-tides/releases/tag/v0.1.2) provides self-contained executables for Linux x86-64/ARM64, macOS ARM64, and Windows x86-64. Extract the archive for your platform and point `ATTACH` at the executable; Bun and node_modules are not required for these binaries.
+[Release v0.1.3](https://github.com/Query-farm/vgi-tides/releases/tag/v0.1.3) provides self-contained executables for Linux x86-64/ARM64, macOS ARM64, and Windows x86-64. Extract the archive for your platform and point `ATTACH` at the executable; Bun and node_modules are not required for these binaries.
 
 ```sql
 ATTACH 'tides' (TYPE vgi,

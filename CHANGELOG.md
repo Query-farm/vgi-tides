@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 (2026-11-16)
+
+- Bump @query-farm/vgi to 0.50.1.
+- CI tooling (haybarn-unittest, lint helpers) runs on Python 3.14.
+
 ## 0.1.2
 
 - Docs link to upstream sources: the catalog `vgi.doc_md` now links NOAA Tides & Currents, the CO-OPS Data Retrieval and Metadata APIs, and the tidal datum definitions (VGI183).
