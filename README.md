@@ -62,7 +62,7 @@ Run [demo.sql](demo.sql) from the project directory after `make build`; it uses 
 
 ## Release binaries
 
-[Release v0.1.3](https://github.com/Query-farm/vgi-tides/releases/tag/v0.1.3) provides self-contained executables for Linux x86-64/ARM64, macOS ARM64, and Windows x86-64. Extract the archive for your platform and point `ATTACH` at the executable; Bun and node_modules are not required for these binaries.
+[Release v0.2.0](https://github.com/Query-farm/vgi-tides/releases/tag/v0.2.0) provides self-contained executables for Linux x86-64/ARM64, macOS ARM64, and Windows x86-64. Extract the archive for your platform and point `ATTACH` at the executable; Bun and node_modules are not required for these binaries.
 
 ```sql
 ATTACH 'tides' (TYPE vgi,
@@ -114,7 +114,7 @@ make verify-stock   # Offline NOAA fixtures through stock DuckDB 2.0.0
 make test-live      # Separate live NOAA requests through stock DuckDB 2.0.0
 ```
 
-`make check` retains the starter's stdio, Unix-socket (`launch:`), HTTP and recipe checks, using Haybarn **2.0.0rc11**. SQL fixture tests validate values, empty responses, argument errors, joins and row counts beyond a single DuckDB batch. Live availability is deliberately separate. Tide-current live verification includes historical observations from November 12, 2025, because the sampled station may lack recent observations.
+`make check` retains the starter's stdio, Unix-socket (`launch:`), HTTP and recipe checks, using Haybarn **2.0.1rc3**. SQL fixture tests validate values, empty responses, argument errors, joins and row counts beyond a single DuckDB batch. Live availability is deliberately separate. Tide-current live verification includes historical observations from November 12, 2025, because the sampled station may lack recent observations.
 
 `vgi-worker.json` records the positive SQL assertions; `test/error-checks.json` records expected failures. `make verify-stock` and `make test-live` produce `verification-stock.json` and `verification-live.json`. [VERIFICATION.md](VERIFICATION.md) records tested versions and results.
 
